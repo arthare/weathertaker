@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import NodeWebcam from 'node-webcam';
 import { platform } from 'os';
 import fs from 'fs';
-import {ImageSubmissionRequest} from '../backend/index';
+import {ImageSubmissionRequest} from '../types/http';
 
 var opts = {
 
@@ -10,7 +10,7 @@ var opts = {
 
   width: 1920,
   height: 1080,
-  quality: 95,
+  quality: 90,
   frames: 1,
   delay: 0,
   output: "jpeg",
@@ -18,7 +18,13 @@ var opts = {
   verbose: true
 };
 
-const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+let config:any;
+try {  
+  config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+} catch(e) {
+  console.log("You need to set up a config.json that includes {apiKey: 'your-api-key'}");
+  process.exit(1);
+}
 
 var Webcam = NodeWebcam.create( opts );
 
@@ -31,7 +37,7 @@ function takeOnePicture() {
         console.error(err);
         return resolve();
       } else if(data) {
-        let base = 'http://172.105.26.34:2702';
+        let base = 'http://172.105.26.34/api';
         if(platform() === 'win32') {
           base = 'http://localhost:2702';
         }
