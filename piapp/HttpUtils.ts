@@ -2,8 +2,7 @@ import express from 'express';
 import * as core from "express-serve-static-core";
 
 export function setCorsHeaders(req:core.Request, res:core.Response) {
-  const originValue = req.headers['origin'] || req.headers['Host'] || 'tourjs.ca';
-  res.setHeader('Access-Control-Allow-Origin', originValue);
+  res.setHeader('Access-Control-Allow-Origin', req.headers['origin'] || req.headers['Host'] || 'tourjs.ca');
   res.setHeader('Access-Control-Allow-Headers', '*');
 }
 
@@ -34,7 +33,7 @@ export function postStartup(req:core.Request, res:core.Response):Promise<any> {
     
   return new Promise((resolve, reject) => {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', handleCors(req, ["http://localhost:3000", "https://tourjs.ca", "https://www.tourjs.ca"]));
+      res.setHeader('Access-Control-Allow-Origin', handleCors(req, ["https://tourjs.ca", "https://www.tourjs.ca"]));
       res.setHeader('Access-Control-Allow-Headers', '*');
       var body = [];
       req.on('data', (chunk:any) => {

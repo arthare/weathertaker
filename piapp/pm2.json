@@ -1,7 +1,7 @@
 {
   "apps": [{
       "name": "weathertaker_api",
-      "script": "index.js",
+      "script": "api/index.js",
       "args": "production",
       "restart_delay": 30000
   }]

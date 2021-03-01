@@ -1,0 +1,44 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [{
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "name": "Backend server",
+      "skipFiles": [
+          "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/backend/index.ts",
+      "preLaunchTask":{
+          "type": "typescript",
+          "tsconfig": "backend/tsconfig.json",
+          "problemMatcher": [
+              "$tsc"
+          ],
+          "group": "build",
+      },
+      "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"]
+    }, {
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/piapp",
+      "name": "Image Sender",
+      "skipFiles": [
+          "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/piapp/index.ts",
+      "preLaunchTask":{
+          "type": "typescript",
+          "tsconfig": "piapp/tsconfig.json",
+          "problemMatcher": [
+              "$tsc"
+          ],
+          "group": "build",
+      },
+      "outFiles": ["${workspaceFolder}/piapp/dist/**/*.js"]
+    }
+  ]
+}
