@@ -5,7 +5,7 @@ import fs from 'fs';
 import {ImageSubmissionRequest} from '../types/http';
 import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
-import ImageJs from 'image-js';
+import {Image as ImageJs} from 'image-js';
 const raspiCamera = new Raspistill();
  
 
@@ -72,7 +72,7 @@ function captureFromCurrentCamera():Promise<Buffer> {
 
 function takeOnePicture() {
   console.log("commanding to take one picture");
-  return captureFromCurrentCamera().then((data:Buffer) => {
+  return captureFromCurrentCamera().then(async (data:Buffer) => {
     let base = 'http://172.105.26.34/api';
     if(platform() === 'win32') {
       base = 'http://localhost:2702';
