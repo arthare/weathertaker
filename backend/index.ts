@@ -46,18 +46,21 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
     if(query.imageBase64.startsWith('data:image')) {
       // good, that saves us reformatting it.
       image = await Image.load(query.imageBase64);
-
       // but now we have to slice off the pre-comma bits.
       query.imageBase64 = query.imageBase64.slice(query.imageBase64.indexOf(',')+1);
     } else {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
+    console.log("loaded ", image.width + " x " + image.height + " image");
     if(image.width !== 1280 || image.height !== 720) {
       debugger; // hey developer, something messed up!
       throw new Error("Image needs to be 1280x720.  It's the browser-app's fault if not.");
     }
     return Db.imageSubmission(query);
-  }).then(handleSuccess(req,res), handleFailure(req,res));
+  }).then(handleSuccess(req,res), (failure) => {
+    console.log("image-submission failure: ", failure && failure.message);
+    handleFailure(req,res)(failure);
+  })
 });
 app.get('/image', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
