@@ -1,0 +1,24 @@
+.Index {
+  &__Video {
+    width: 100vw;
+  }
+  &__Video-Holder {
+    background-color: blue;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media screen and (orientation:portrait) {
+  .Index {
+    &__Video {
+      width: 100vh;
+    }
+    &__Video-Holder {
+      width: 100vh;
+      height: 100vw;
+      
+    }
+  }
+}

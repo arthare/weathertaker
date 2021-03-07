@@ -9,16 +9,15 @@ import {
 import logo from './logo.svg';
 import './App.scss';
 import PageTestSubmit from './PageTestSubmit';
+import PageIndex from './PageIndex';
 
 function App() {
   return (
     <Router>
       <div className="App">
         <div className="App-Content">
-          App!
-          <Link to="/test-submit">Test-Submit</Link>
           <Switch>
-            <Route exact path="/" />
+            <Route exact path="/" children={<PageIndex />} />
             <Route exact path="/test-submit" children={<PageTestSubmit />} />
           </Switch>
         </div>

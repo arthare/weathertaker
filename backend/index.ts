@@ -1,7 +1,7 @@
 import express from 'express';
 import * as core from 'express-serve-static-core';
 import {postStartup, setCorsHeaders, setUpCors} from './HttpUtils';
-import Db from './Db';
+import Db, { VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 
@@ -37,6 +37,13 @@ function handleFailure(req:core.Request, res:core.Response) {
   }
 }
 
+app.get('/video', (req:core.Request, res:core.Response) => {
+  // fetch the video metadata and send it to the browser, who can then decide what to do
+  setCorsHeaders(req, res);
+  return Db.getVideo(req.query.id || null).then(handleSuccess(req,res), handleFailure(req,res));
+
+});
+
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
@@ -52,9 +59,9 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
     } else {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
-    if(image.width !== 1920 || image.height !== 1080) {
+    if(image.width !== 1280 || image.height !== 720) {
       debugger; // hey developer, something messed up!
-      throw new Error("Image needs to be 1920x1080.  It's the browser-app's fault if not.");
+      throw new Error("Image needs to be 1280x720.  It's the browser-app's fault if not.");
     }
     return Db.imageSubmission(query);
   }).then(handleSuccess(req,res), handleFailure(req,res));

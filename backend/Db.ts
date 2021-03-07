@@ -27,6 +27,13 @@ export interface InsertVideo {
   filename:string;
 }
 
+export interface VideoInfo {
+  id:number;
+  filename:string;
+  sourceId:number;
+  handle:string;
+}
+
 
 function getDb():Promise<mysql.Connection> {
 
@@ -182,6 +189,109 @@ export default class Db {
         })
       }).finally(() => db.end());
     })
+  }
+
+  static getVideo(id:number|null):Promise<VideoInfo> {
+
+    return getDb().then((db) => {
+      return new Promise<VideoInfo>((resolve, reject) => {
+
+        let q;
+        let args = [];
+        if(id !== null) {
+          q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id and videos.id=?`;
+          args = [id];
+        } else {
+          q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id order by id desc limit 1`;
+          args = [];
+        }
+
+        db.execute(q, args, (err, result:any[]) => {
+          if(err) {
+            reject(err);
+          } else if(result.length === 1) {
+            let filename:string = result[0].filename;
+
+            if(filename) {
+              const ixLastSlash = filename.lastIndexOf('/');
+              filename = filename.slice(ixLastSlash+1);
+              resolve({
+                filename,
+                id: result[0].id,
+                sourceId: result[0].sourceid,
+                handle: result[0].handle,
+              } as VideoInfo);
+            }
+          } else {
+            reject(new Error("No videos found"));
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+
+  static async markVideoRemoved(id:number):Promise<any> {
+    return getDb().then((db) => {
+      return new Promise<void>((resolve, reject) => {
+        db.execute('update videos set removed=1 where id=?', [id], (err, results:any[]) => {
+          if(err) {
+            console.log("failed to mark video ", id, " as missing");
+            reject(err);
+          } else {
+            console.log("marked video ", id, " as missing");
+            resolve();
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+
+  static async checkRemovedVideos():Promise<any> {
+    const activeVideos = await this.getActiveVideoInfos();
+
+    let updateIds = [];
+    activeVideos.forEach((video) => {
+      if(!fs.existsSync(video.filename)) {
+        console.log("video ", video.filename, " doesn't exist.  We will remove it");
+        updateIds.push(video.id);
+      }
+    });
+
+    console.log("We noticed that these videos IDs are missing: ", updateIds);
+    updateIds.forEach(async (id) => {
+      await Db.markVideoRemoved(id);
+    })
+  }
+
+  static getActiveVideoInfos():Promise<VideoInfo[]> {
+    // this returns the "leader" videos for every handle.  if it's not a leader, the file can be deleted.
+    return getDb().then((db) => {
+      return new Promise<VideoInfo[]>((resolve, reject) => {
+        db.execute('select filename,sourceid,videos.id,sources.handle from videos,sources where videos.sourceid=sources.id and videos.removed=0 order by videos.id desc ', [], (err, results:any[]) => {
+          if(err) {
+            reject(err);
+          } else {
+            const asVideoInfos = results.map((video) => {
+              let filename:string = video.filename;
+  
+              if(filename) {
+                const ixLastSlash = filename.lastIndexOf('/');
+                filename = filename.slice(ixLastSlash+1);
+                return {
+                  filename,
+                  id: video.id,
+                  sourceId: video.sourceid,
+                  handle: video.handle,
+                } as VideoInfo;
+              }
+            })
+
+            resolve(asVideoInfos);
+          }
+        })
+      }).finally(() => db.end());
+    })
+
   }
 
   static getTestImage(id:number):Promise<ImageResponse> {

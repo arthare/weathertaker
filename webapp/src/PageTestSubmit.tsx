@@ -8,8 +8,8 @@ function resizeImage(originalBase64:string, maxWidth:number, maxHeight:number):P
     img.onload = function() {
       const aspect = img.width / img.height;
 
-      let desiredHeight = 1080;
-      let desiredWidth = 1920;
+      let desiredHeight = 720;
+      let desiredWidth = 1280;
   
       var canvas = document.createElement('canvas');
       canvas.width = desiredWidth;
@@ -51,7 +51,7 @@ const PageIndex = () => {
         const asArrayBuffer:Buffer = Buffer.from(theFile.target.result as ArrayBuffer);
         const asBase64 = asArrayBuffer.toString('base64');
         const asDataUri = `data:${files[0].type};base64,${asBase64}`;
-        return resizeImage(asDataUri, 1920, 1080).then((resizedDownDataUri:string) => {
+        return resizeImage(asDataUri, 1280, 720).then((resizedDownDataUri:string) => {
 
           const data = {
             apiKey: 'art-test',

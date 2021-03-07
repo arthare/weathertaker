@@ -4,7 +4,7 @@ import fs from 'fs';
 import { platform } from 'os';
 import { cwd } from 'process';
 import { v4 as uuidv4 } from 'uuid';
-import Db, { InsertVideo, SourceInfo } from './Db';
+import Db, { InsertVideo, SourceInfo, VideoInfo } from './Db';
 import { guaranteePath } from './FsUtils';
 const ffmpeg = require("ffmpeg-cli");
 ffmpeg.run("-version");
@@ -23,13 +23,65 @@ export function markSourceStale(sourceId:number) {
   stale[sourceId] = true;
 }
 
+async function cleanupOldVideos() {
+  const activeVideos:VideoInfo[] = await Db.getActiveVideoInfos();
+  const allHandles = fs.readdirSync(`${cwd()}/videos/`);
+
+  let videoHandleLeaders:{[key:string]:VideoInfo} = {}
+
+  activeVideos.forEach((video) => {
+    if(!videoHandleLeaders[video.handle]) {
+      videoHandleLeaders[video.handle] = video;
+      return;
+    }
+    const currentLeader = videoHandleLeaders[video.handle];
+    if(video.id > currentLeader.id) {
+      // this is a newer video for this handle
+      videoHandleLeaders[video.handle] = video;
+    }
+  });
+
+  // ok, so every video in videoHandleLeaders is safe.  Every other video is removable
+  let removedFiles = [];
+  allHandles.forEach((handle) => {
+    const handlePath = `${cwd()}/videos/${handle}/`;
+    if(fs.lstatSync(handlePath).isDirectory()) {
+      const files = fs.readdirSync(handlePath);
+      const myLeader = videoHandleLeaders[handle];
+      files.forEach((file) => {
+        const fullPath = `${handlePath}${file}`;
+        if(fs.lstatSync(fullPath).isFile()) {
+          debugger;
+          
+          if(!myLeader) {
+            console.log("Removing ", file, " because I guess there isn't a leader for ", handle);
+            removedFiles.push(fullPath);
+          }
+          else if(myLeader.filename !== file) {
+            console.log("removing ", file, " because it wasn't the video handle leader for ", handle, ".  The leader is ", myLeader);
+            removedFiles.push(fullPath);
+          }
+        }
+      })
+    }
+  });
+
+  // ok, time to actually remove all these files...
+  removedFiles.forEach(async (file) => {
+    console.log("unlinking ", file);
+    fs.unlinkSync(file);
+  });
+  await Db.checkRemovedVideos();
+}
+
 async function generateVideoFor(sourceId:number):Promise<any> {
   
   let sourceInfo:SourceInfo = await Db.getSourceInfo(sourceId);
 
   let images = await Db.getRecentImages(new Date().getTime(), 4*3600, sourceId);
+  console.log(`found ${images.length} images for source ${sourceInfo.handle} ${sourceInfo.id}`);
   images = images.filter((image) => fs.existsSync(image.filename));
-  
+  console.log("after existence check, we have " + images.length + " images for ", sourceInfo.handle);
 
   const imageList = images.map((image) => {
 
@@ -43,36 +95,40 @@ async function generateVideoFor(sourceId:number):Promise<any> {
     }
     
 
-    return filename
+    return filename;
   });
 
-  const createdVideo = await new Promise<InsertVideo>((resolve, reject) => {
-    const outFileName = uuidv4();
-    const videoPath = `${cwd()}/videos/${sourceInfo.handle}/${outFileName}.mp4`;
-    guaranteePath(videoPath);
-    let finalCommand = `cat ${imageList.join(' ')} | ffmpeg -f image2pipe -i - -c:v libx264 -pix_fmt yuv420p ${videoPath}`;
-    
-    if(platform() === 'win32') {
-      finalCommand = finalCommand.replace(/\\/gi, '/');
-    }
-
-    console.log("command\n\n", finalCommand);
-    exec(finalCommand, (err, stdout, stderr) => {
-      if(err) {
-        debugger;
-        reject(err);
-      } else {
-        // this is fine - if it didn't return a total-failure error code, then it actually generated!
-        resolve({
-          sourceId,
-          filename: videoPath,
-          imageIds: images.map((img) => img.id),
-        });
+  if(imageList.length > 0) {
+    const createdVideo = await new Promise<InsertVideo>((resolve, reject) => {
+      const outFileName = uuidv4();
+      const videoPath = `${cwd()}/videos/${sourceInfo.handle}/${outFileName}.mp4`;
+      guaranteePath(videoPath);
+      let finalCommand = `cat ${imageList.join(' ')} | ffmpeg -f image2pipe -i - -c:v libx264 -pix_fmt yuv420p ${videoPath}`;
+      
+      if(platform() === 'win32') {
+        finalCommand = finalCommand.replace(/\\/gi, '/');
       }
+  
+      console.log("command\n\n", finalCommand);
+      exec(finalCommand, (err, stdout, stderr) => {
+        if(err) {
+          debugger;
+          reject(err);
+        } else {
+          // this is fine - if it didn't return a total-failure error code, then it actually generated!
+          resolve({
+            sourceId,
+            filename: videoPath,
+            imageIds: images.map((img) => img.id),
+          });
+        }
+      });
     });
-  });
+    await Db.insertVideo(createdVideo);
 
-  Db.insertVideo(createdVideo);
+    await cleanupOldVideos();
+  }
+
 }
 
 async function checkForWork() {
@@ -110,6 +166,7 @@ async function checkForWork() {
 }
 
 export function notifyDirtySource(sourceId:number) {
+  console.log(`marked ${sourceId} as dirty`);
   stale[sourceId] = true;
 }
 
@@ -119,4 +176,5 @@ export function initVideoMaker() {
   };
 
   checkForWork();
+  cleanupOldVideos();
 }
