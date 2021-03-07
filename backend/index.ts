@@ -7,13 +7,6 @@ import Image from 'image-js';
 
 let app = <core.Express>express();
 
-export interface PostRequest {
-  apiKey:string;
-}
-
-export interface ImageSubmissionRequest extends PostRequest {
-  imageBase64:string;
-}
 export interface ImageRequest {
   id:number;
 }
