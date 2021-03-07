@@ -28,6 +28,7 @@ async function cleanupOldVideos() {
   const allHandles = fs.readdirSync(`${cwd()}/videos/`);
 
   let videoHandleLeaders:{[key:string]:VideoInfo} = {}
+  let reactedToVideos:{[key:string]:number} = await Db.getReactionCounts();
 
   activeVideos.forEach((video) => {
     if(!videoHandleLeaders[video.handle]) {
@@ -43,23 +44,33 @@ async function cleanupOldVideos() {
 
   // ok, so every video in videoHandleLeaders is safe.  Every other video is removable
   let removedFiles = [];
+  const tmNow = new Date().getTime();
+
   allHandles.forEach((handle) => {
     const handlePath = `${cwd()}/videos/${handle}/`;
     if(fs.lstatSync(handlePath).isDirectory()) {
       const files = fs.readdirSync(handlePath);
-      const myLeader = videoHandleLeaders[handle];
+      const myHandleLeader = videoHandleLeaders[handle];
       files.forEach((file) => {
         const fullPath = `${handlePath}${file}`;
         if(fs.lstatSync(fullPath).isFile()) {
           debugger;
           
-          if(!myLeader) {
-            console.log("Removing ", file, " because I guess there isn't a leader for ", handle);
+          if(!myHandleLeader) {
+            console.log("Removing ", file, " because I guess there isn't a leader at all for ", handle);
             removedFiles.push(fullPath);
-          }
-          else if(myLeader.filename !== file) {
-            console.log("removing ", file, " because it wasn't the video handle leader for ", handle, ".  The leader is ", myLeader);
-            removedFiles.push(fullPath);
+          } else {
+            const videoIsLeader = myHandleLeader.filename === file;
+            const videoIsReactedTo = reactedToVideos[file];
+            const videoIsRecent = (tmNow - fs.statSync(fullPath).mtimeMs) < 60000*60;
+            if(videoIsLeader ||
+               videoIsRecent ||
+               videoIsReactedTo) {
+              console.log(`Video ${file} gets to live because it is leader ${!!videoIsLeader}, recent ${!!videoIsRecent}, or reactedto ${videoIsReactedTo}`);
+            } else {
+              console.log(`queuing ${file} for deletion because it is not leader, recent, or reacted-to`);
+              removedFiles.push(fullPath);
+            }
           }
         }
       })

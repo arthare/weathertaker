@@ -1,12 +1,13 @@
 import mysql from 'mysql2';
 import fs from 'fs';
-import {ImageResponse, ImageSubmissionRequest} from './index';
+import {ImageResponse} from './index';
 import { cwd } from 'process';
 import { v4 as uuidv4 } from 'uuid';
 import atob from 'atob';
 import {guaranteePath} from './FsUtils';
 import md5 from 'md5';
 import { notifyDirtySource } from './VideoMaker';
+import { ImageSubmissionRequest, ReactionType } from '../types/http';
 
 const config = JSON.parse(fs.readFileSync('./db-config.json', 'utf8'));
 
@@ -132,10 +133,11 @@ export default class Db {
 
     return getDb().then((db) => {
       return new Promise<number>((resolve, reject) => {
-        db.execute('insert into videos (sourceid,filename) values (?,?)', [sourceId, filename], (err, result:any) => {
+        db.execute('insert into videos (sourceid,filename,removed) values (?,?,0)', [sourceId, filename], (err, result:any) => {
           if(err) {
             reject(err);
           } else {
+            console.log("inserted new video: ", filename, " @ id ", result.insertId);
             resolve(result.insertId);
           }
         })
@@ -143,6 +145,24 @@ export default class Db {
     })
 
   }
+
+  public static async submitReaction(how:ReactionType, ip:string, videoId:number|string):Promise<any> {
+    
+    return getDb().then((db) => {
+      return new Promise<number>((resolve, reject) => {
+        db.execute('insert into reactions (videoid,reactionid,srcip) values (?,?,?)', [videoId, how, ip], (err, result:any) => {
+          if(err) {
+            console.error("Tried to insert reaction ", how, ip, videoId, " but failed: ", err);
+            reject(err);
+          } else {
+            console.log(`inserted reaction ${how} to video ${videoId} from ip ${ip}`);
+            resolve(result);
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+
   private static async createVideoImages(videoId:number, imageIds:number[]):Promise<number> {
 
     return getDb().then((db) => {
@@ -244,6 +264,27 @@ export default class Db {
         })
       }).finally(() => db.end());
     })
+  }
+
+  static async getReactionCounts():Promise<{[key:string]:number}> {
+    return getDb().then((db) => {
+      return new Promise<{[key:string]:number}>((resolve, reject) => {
+        db.execute('select videoid, videos.filename, count(reactions.id) from reactions, videos where reactions.videoid = videos.id and videos.removed=0 group by videos.id', [], (err, results:any[]) => {
+          if(err) {
+            console.log("failed to get reaction counts");
+            reject(err);
+          } else {
+            let ret:{[key:string]:number} = {};
+            results.forEach((result) => {
+              ret[result.filename] = (ret[result.filename] || 0) + 1;
+            });
+            console.log("reaction counts for non-removed videos: ", ret);
+            resolve(ret);
+          }
+        })
+      }).finally(() => db.end());
+    })
+
   }
 
   static async checkRemovedVideos():Promise<any> {

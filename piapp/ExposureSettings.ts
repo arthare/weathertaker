@@ -1,6 +1,8 @@
 import {Raspistill} from 'node-raspistill';
 import {Image as ImageJs} from 'image-js';
 import {dassert} from './Utils';
+import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
+
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
 const MAX_EXPOSURE_US = 1000*1000; // 1s
@@ -63,8 +65,8 @@ export class ExposureSettings {
     raspiCamera.setOptions({
       shutterspeed: this.currentUs,
       iso: this.currentIso,
-      width: 1280,
-      height: 720,
+      width: 1920,
+      height: 1080,
       flicker: 'off',
       imageEffect: 'none',
       drc: 'off',
@@ -141,8 +143,8 @@ export class ExposureSettings {
 
 
     let resizedImage = image;
-    if(image.width !== 1280 || image.height !== 720) {
-      resizedImage = image.resize({width: 1280, height: 720});
+    if(image.width !== IMAGE_SUBMISSION_WIDTH || image.height !== IMAGE_SUBMISSION_HEIGHT) {
+      resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
     }
 
     await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});

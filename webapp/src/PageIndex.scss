@@ -3,10 +3,40 @@
     width: 100vw;
   }
   &__Video-Holder {
-    background-color: blue;
+
+    position: relative;
     overflow: hidden;
     width: 100vw;
     height: 100vh;
+  }
+  &__Video-Reactions {
+    position: absolute;
+    display: block;
+    top: 0vh;
+    right: 0vw;
+    
+    margin-left: auto;
+    margin-right: auto;
+    padding-right: 16px;
+    padding-top: 16px;
+  }
+  &__Video-Reaction {
+    margin-right: 8px;
+    font-size: 32px;
+    color: white;
+    text-shadow: 3px 3px 3px black;
+    cursor: pointer;
+
+    &:hover {
+      color: blue;
+    }
+  }
+  &__Video-Progress-Canvas {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100px;
+    height: 100px;
   }
 }
 

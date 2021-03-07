@@ -4,6 +4,9 @@ import {postStartup, setCorsHeaders, setUpCors} from './HttpUtils';
 import Db, { VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
+import fs from 'fs';
+import {ImageSubmissionRequest, ReactSubmission} from '../types/http';
+import { resolveNaptr } from 'dns';
 
 let app = <core.Express>express();
 
@@ -37,6 +40,36 @@ app.get('/video', (req:core.Request, res:core.Response) => {
 
 });
 
+console.log("about to create download-video");
+app.get('/download-video', (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+  if(req.query.id) {
+    console.log("you asked for id ", req.query.id);
+    return Db.getVideo(req.query.id).then((videoInfo:VideoInfo) => {
+      console.log("video info for that is ", videoInfo);
+      const localVideoPath = `./videos/${videoInfo.handle}/${videoInfo.filename}`;
+      if(fs.existsSync(localVideoPath)) {
+        console.log("transferring video with res.download");
+        res.download(localVideoPath);
+      } else {
+        console.log("and the file at ", localVideoPath, " does not exist!");
+        res.writeHead(404, 'not-found');
+        res.end();
+      }
+    }, (failure) => {
+      console.log("Failed to find video info for ", req.query.id, ": ", failure);
+      res.writeHead(404, 'not-found');
+      res.end();
+    })
+
+    
+  } else {
+    console.log("Failed to find video info for ", req.query.id, ": ");
+    res.writeHead(404, 'not-found');
+    res.end();
+  }
+});
+
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
@@ -52,9 +85,9 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
     console.log("loaded ", image.width + " x " + image.height + " image");
-    if(image.width !== 1280 || image.height !== 720) {
+    if(image.width !== 1920 || image.height !== 1080) {
       debugger; // hey developer, something messed up!
-      throw new Error("Image needs to be 1280x720.  It's the browser-app's fault if not.");
+      throw new Error("Image needs to be 1920x1080.  It's the browser-app's fault if not.");
     }
     return Db.imageSubmission(query);
   }).then(handleSuccess(req,res), (failure) => {
@@ -62,6 +95,15 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
     handleFailure(req,res)(failure);
   })
 });
+
+app.post('/react', (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+  return postStartup(req,res).then(async (query:ReactSubmission) => {
+    return Db.submitReaction(query.how, req.ip, query.videoId);
+  }).then(handleSuccess(req,res), handleFailure(req,res));
+
+})
+
 app.get('/image', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return Db.getTestImage(req.query.id).then(handleSuccess(req,res), handleFailure(req,res));
@@ -69,6 +111,6 @@ app.get('/image', (req:core.Request, res:core.Response) => {
 
 setUpCors(app);
 app.listen(2702);
-console.log("weathertaker api serving on 2702");
+console.log("weathertaker api serving on 2702 qwer");
 
 initVideoMaker();

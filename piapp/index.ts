@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import NodeWebcam from 'node-webcam';
 import { platform } from 'os';
 import fs from 'fs';
-import {ImageSubmissionRequest} from '../types/http';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH} from '../types/http';
 import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
@@ -10,8 +10,8 @@ const raspiCamera = new Raspistill();
  
 
 var webcamOpts = {
-  width: 1280,
-  height: 720,
+  width: IMAGE_SUBMISSION_WIDTH,
+  height: IMAGE_SUBMISSION_HEIGHT,
   quality: 90,
   frames: 1,
   skip: 100,
