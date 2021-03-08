@@ -142,9 +142,9 @@ export class ExposureSettings {
     const image = await ImageJs.load(imageBuffer);
     console.log("image straight outta camera was ", image.width, " x ", image.height);
 
-    const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
-    console.log("saved to ", savePath);
-    image.save(savePath, {format: 'jpg'});
+    //const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
+    //console.log("saved to ", savePath);
+    //image.save(savePath, {format: 'jpg'});
 
     const peakHistoBrightness = 256;
     const histo = (image as any).getHistograms({maxSlots: peakHistoBrightness, useAlpha: false});

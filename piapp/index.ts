@@ -7,7 +7,8 @@ import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
 const raspiCamera = new Raspistill();
- 
+
+const IMAGE_CADENCE = 20000;
 
 var webcamOpts = {
   width: IMAGE_SUBMISSION_WIDTH,
@@ -89,6 +90,8 @@ function captureFromCurrentCamera():Promise<Buffer> {
 
 function takeOnePicture() {
   console.log("commanding to take one picture", raspiCameraValid, webcamValid);
+  const tmStart = new Date().getTime();
+  const tmNext = tmStart + IMAGE_CADENCE;
   return captureFromCurrentCamera().then(async (data:Buffer) => {
     let base = 'http://172.105.26.34/api';
     if(platform() === 'win32') {
@@ -125,7 +128,11 @@ function takeOnePicture() {
     raspiCameraValid = true;
     webcamValid = true;
   }).finally(() => {
-    setTimeout(takeOnePicture, 15000);
+
+    // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
+    const tmFinally = new Date().getTime();
+    const msUntil = Math.max(tmNext - tmFinally, 0);
+    setTimeout(takeOnePicture, msUntil);
   })
 
 }
