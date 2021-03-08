@@ -9,8 +9,7 @@ const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 100; // 1/10000s
 
-const DEFAULT_EXPOSURE_US = MAX_EXPOSURE_US / 2;
-const DEFAULT_ISO = 800;
+const DEFAULT_ISO = 100;
 
 const ADJUST_RATE = 2.75;
 
@@ -26,16 +25,20 @@ export class ExposureSettings {
   constructor() {
     const currentHour = new Date().getHours();
 
-    // dayCycle will be 1.0 at midnight, 0.0 at noon.
+    // dayCycle will be 1.0 at local midnight, 0.0 at noon, assuming the pi's clock is set right.
     const dayCycle = (Math.cos(currentHour*2*Math.PI / 24) + 1)/2;
 
     // minIsoEquivMaxExposure represents 2-second, 800-iso exposures as what they'd be as a ISO100 shot.  Then we're going to run checkExposureBounds to get everything back hunky-dory
     // so at midnight we should really be starting at 16-second iso100 equivalents, so startingUs is going to get calculated as that.  Then it'll be 8-second, ISO200, 4-second ISO400, and finally 2-second ISO800
     const minIsoEquivMaxExposure = MAX_EXPOSURE_US * (MAX_ISO / MIN_ISO);
 
+
+    // this will give us startUs = (really long exposure) at midnight, (really short exposure) at noon.
     const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*MIN_EXPOSURE_US;
+
+
     this.currentUs = startingUs; // 100ms, 1/10 second
-    this.currentIso = DEFAULT_ISO;
+    this.currentIso = MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
     
 
     // currentUs
