@@ -70,6 +70,21 @@ app.get('/download-video', (req:core.Request, res:core.Response) => {
   }
 });
 
+app.get('/reaction-count', (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+  if(req.query.videoId) {
+    return Db.getReactionCountsForVideo(req.query.videoId).then((counts) => {
+      handleSuccess(req,res)(counts);
+    }, (failure) => {
+      handleFailure(req,res)(failure);
+    })
+  } else {
+    console.log("Failed to find reaction count for videoid ", req.query.videoId, ": ");
+    res.writeHead(404, 'not-found');
+    res.end();
+  }
+});
+
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {

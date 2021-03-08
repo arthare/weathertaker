@@ -8,6 +8,7 @@ import {guaranteePath} from './FsUtils';
 import md5 from 'md5';
 import { notifyDirtySource } from './VideoMaker';
 import { ImageSubmissionRequest, ReactionType } from '../types/http';
+import { platform } from 'os';
 
 const config = JSON.parse(fs.readFileSync('./db-config.json', 'utf8'));
 
@@ -26,6 +27,8 @@ export interface InsertVideo {
   sourceId:number;
   imageIds:number[];
   filename:string;
+  tmStart:number;
+  tmEnd:number;
 }
 
 export interface VideoInfo {
@@ -47,6 +50,9 @@ function getDb():Promise<mysql.Connection> {
   return reconnect();
 }
 
+function getPathToVideo(videoInfo:VideoInfo) {
+  return `./videos/${videoInfo.handle}/${videoInfo.filename}`;
+}
 
 export default class Db {
 
@@ -125,19 +131,19 @@ export default class Db {
     });
   }
 
-  private static createVideoId(sourceId:number, filename:string):Promise<number> {
+  private static createVideoId(sourceId:number, filepath:string, tmStart:number, tmEnd:number):Promise<number> {
 
-    if(!fs.existsSync(filename)) {
+    if(!fs.existsSync(filepath)) {
       throw new Error("Video doesn't exist on-disk");
     }
 
     return getDb().then((db) => {
       return new Promise<number>((resolve, reject) => {
-        db.execute('insert into videos (sourceid,filename,removed) values (?,?,0)', [sourceId, filename], (err, result:any) => {
+        db.execute('insert into videos (sourceid,filename,removed, tmStart, tmEnd) values (?,?,0,?,?)', [sourceId, filepath, tmStart, tmEnd], (err, result:any) => {
           if(err) {
             reject(err);
           } else {
-            console.log("inserted new video: ", filename, " @ id ", result.insertId);
+            console.log("inserted new video: ", filepath, " @ id ", result.insertId);
             resolve(result.insertId);
           }
         })
@@ -150,7 +156,7 @@ export default class Db {
     
     return getDb().then((db) => {
       return new Promise<number>((resolve, reject) => {
-        db.execute('insert into reactions (videoid,reactionid,srcip) values (?,?,?)', [videoId, how, ip], (err, result:any) => {
+        db.execute('insert into reactions (videoid,reactionid,srcip,tm) values (?,?,?,unix_timestamp())', [videoId, how, ip], (err, result:any) => {
           if(err) {
             console.error("Tried to insert reaction ", how, ip, videoId, " but failed: ", err);
             reject(err);
@@ -183,8 +189,9 @@ export default class Db {
   }
 
   static async insertVideo(createdVideo:InsertVideo):Promise<number> {
-    const videoId = await Db.createVideoId(createdVideo.sourceId, createdVideo.filename);
+    const videoId = await Db.createVideoId(createdVideo.sourceId, createdVideo.filename, createdVideo.tmStart, createdVideo.tmEnd);
 
+    console.log("inserting video with metadata: ", createdVideo);
     await Db.createVideoImages(videoId, createdVideo.imageIds);
 
     return videoId;
@@ -251,6 +258,10 @@ export default class Db {
   }
 
   static async markVideoRemoved(id:number):Promise<any> {
+    if(platform() === 'win32') {
+      // when art's debugging, don't wipe out videos...
+      return Promise.resolve();
+    }
     return getDb().then((db) => {
       return new Promise<void>((resolve, reject) => {
         db.execute('update videos set removed=1 where id=?', [id], (err, results:any[]) => {
@@ -266,17 +277,73 @@ export default class Db {
     })
   }
 
-  static async getReactionCounts():Promise<{[key:string]:number}> {
+  static async getReactionCountsForVideo(videoId:number):Promise<{[key:string]:number}> {
+    // ok, this one is a bit complicated.
+    // if we get reactions for a video, that'll be fairly shitty.
+    // because a video is only the "lead" video for like 15 seconds.
+    // so what we want to do is try to get the cumulative reaction counts for every video that shares images with the targeted video.
+    // so first we want to get all the imageids that are included in this video:
+    //   SQL: select images_in_videos.id,videos.* from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id
+    // then we want to find all the videoids that share some of those images:
+    //   SQL: (select videos.id from videos,images_in_videos where images_in_videos.videoid=videos.id and images_in_videos.imageid in (select images_in_videos.imageid from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id) group by videos.id)
+    // then we want to find all the reactions applied to any of those videoids:
+    //   SQL: (select count(id) as total, reactions.reactionid from reactions where reactions.videoid in (select videos.id from videos,images_in_videos where images_in_videos.videoid=videos.id and images_in_videos.imageid in (select images_in_videos.imageid from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id) group by videos.id) group by reactions.reactionid)
+
+    console.log("getting reaction counts for " + videoId);
     return getDb().then((db) => {
-      return new Promise<{[key:string]:number}>((resolve, reject) => {
-        db.execute('select videoid, videos.filename, count(reactions.id) from reactions, videos where reactions.videoid = videos.id and videos.removed=0 group by videos.id', [], (err, results:any[]) => {
+      return new Promise<{[key:number]:number}>((resolve, reject) => {
+        db.execute(`SELECT 
+                          COUNT(id) as total, reactions.reactionid
+                      FROM
+                          reactions
+                      WHERE
+                          reactions.videoid IN (SELECT 
+                                  videos.id
+                              FROM
+                                  videos,
+                                  images_in_videos
+                              WHERE
+                                  images_in_videos.videoid = videos.id
+                                      AND images_in_videos.imageid IN (SELECT 
+                                          images_in_videos.imageid
+                                      FROM
+                                          images_in_videos,
+                                          reactions,
+                                          videos
+                                      WHERE
+                                          videos.removed = 0
+                                              AND videos.id = ?
+                                              AND images_in_videos.videoid = videos.id)
+                              GROUP BY videos.id)
+                      GROUP BY reactions.reactionid`, [videoId], (err, results:any[]) => {
           if(err) {
             console.log("failed to get reaction counts");
             reject(err);
           } else {
             let ret:{[key:string]:number} = {};
             results.forEach((result) => {
-              ret[result.filename] = (ret[result.filename] || 0) + 1;
+              ret[result.reactionid] = result.total
+            });
+            console.log("reaction countzz for video ", videoId, ":", ret);
+            resolve(ret);
+          }
+        })
+      }).finally(() => db.end());
+    })
+
+  }
+
+  static async getReactionCounts():Promise<{[key:number]:number}> {
+    return getDb().then((db) => {
+      return new Promise<{[key:number]:number}>((resolve, reject) => {
+        db.execute('select videoid, videos.filename, count(reactions.id) from reactions, videos where reactions.videoid = videos.id and videos.removed=0 and reactions.tm > unix_timestamp() - 3600*24*30 group by videos.id', [], (err, results:any[]) => {
+          if(err) {
+            console.log("failed to get reaction counts");
+            reject(err);
+          } else {
+            let ret:{[key:number]:number} = {};
+            results.forEach((result) => {
+              ret[result.videoid] = (ret[result.videoid] || 0) + 1;
             });
             console.log("reaction counts for non-removed videos: ", ret);
             resolve(ret);
@@ -292,8 +359,8 @@ export default class Db {
 
     let updateIds = [];
     activeVideos.forEach((video) => {
-      if(!fs.existsSync(video.filename)) {
-        console.log("video ", video.filename, " doesn't exist.  We will remove it");
+      if(!fs.existsSync(getPathToVideo(video))) {
+        console.log("video ", video.id, ": ", getPathToVideo(video), " doesn't exist.  We will remove it");
         updateIds.push(video.id);
       }
     });

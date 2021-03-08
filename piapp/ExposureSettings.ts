@@ -69,7 +69,7 @@ export class ExposureSettings {
   }
 
   setupCamera(raspiCamera:Raspistill) {
-    console.log("set camera to expose for " + (this.currentUs/1000).toFixed(1) + "ms @ " + this.currentIso + " ISO");
+    console.log("set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
       shutterspeed: (Math.floor(this.currentUs / 20)*20),
       iso: this.currentIso,
@@ -156,11 +156,11 @@ export class ExposureSettings {
       resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
     }
 
-    await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
     //(resizedImage as any).multiply(multiplyToGetToTarget);
-    await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
     resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
-    await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
 
     this.imagesTaken++;
     return Buffer.from(await resizedImage.toBuffer({format: 'jpg'}));
