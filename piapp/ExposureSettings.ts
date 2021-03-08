@@ -7,7 +7,7 @@ import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
 const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
-const MIN_EXPOSURE_US = 100; // 1/10000s
+const MIN_EXPOSURE_US = 60; // 1/10000s
 
 const DEFAULT_ISO = 100;
 
@@ -23,10 +23,10 @@ export class ExposureSettings {
   imagesTaken = 0;
 
   constructor() {
-    const currentHour = new Date().getHours();
+    const currentHour = new Date().getHours() + (new Date().getMinutes()/60);
 
     // dayCycle will be 1.0 at local midnight, 0.0 at noon, assuming the pi's clock is set right.
-    const dayCycle = (Math.cos(currentHour*2*Math.PI / 24) + 1)/2;
+    const dayCycle = Math.pow((Math.cos(currentHour*2*Math.PI / 24) + 1)/2, 4);
 
     // minIsoEquivMaxExposure represents 2-second, 800-iso exposures as what they'd be as a ISO100 shot.  Then we're going to run checkExposureBounds to get everything back hunky-dory
     // so at midnight we should really be starting at 16-second iso100 equivalents, so startingUs is going to get calculated as that.  Then it'll be 8-second, ISO200, 4-second ISO400, and finally 2-second ISO800
@@ -89,7 +89,7 @@ export class ExposureSettings {
   }
 
   setupCamera(raspiCamera:Raspistill) {
-    console.log("set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
+    console.log(new Date().getTime(), "set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
       shutterspeed: (Math.floor(this.currentUs / 20)*20),
       iso: this.currentIso,
@@ -140,7 +140,7 @@ export class ExposureSettings {
 
   async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
     const image = await ImageJs.load(imageBuffer);
-    console.log("image straight outta camera was ", image.width, " x ", image.height);
+    console.log(new Date().getTime(), "image straight outta camera was ", image.width, " x ", image.height);
 
     //const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
     //console.log("saved to ", savePath);
@@ -150,7 +150,7 @@ export class ExposureSettings {
     const histo = (image as any).getHistograms({maxSlots: peakHistoBrightness, useAlpha: false});
 
     const histoResult = this.analyzeHistogram(2.5, 97.5, peakHistoBrightness, histo);
-    console.log("histoResult = ", histoResult);
+    console.log(new Date().getTime(), "histoResult = ", histoResult);
 
     let sum = 0;
     let count = 0;
@@ -163,7 +163,7 @@ export class ExposureSettings {
     const mean = sum / count;
     const targetMean = peakHistoBrightness / 2;
     const multiplyToGetToTarget = targetMean / mean;
-    console.log("mean brightness = ", mean.toFixed(1));
+    console.log(new Date().getTime(), "mean brightness = ", mean.toFixed(1));
     if(mean < targetMean) {
       this.brighter(multiplyToGetToTarget);
     } else if(mean > targetMean) {

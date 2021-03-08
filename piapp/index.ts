@@ -89,7 +89,7 @@ function captureFromCurrentCamera():Promise<Buffer> {
 }
 
 function takeOnePicture() {
-  console.log("commanding to take one picture", raspiCameraValid, webcamValid);
+  console.log(new Date().getTime(), "commanding to take one picture", raspiCameraValid, webcamValid);
   const tmStart = new Date().getTime();
   const tmNext = tmStart + IMAGE_CADENCE;
   return captureFromCurrentCamera().then(async (data:Buffer) => {
@@ -111,10 +111,10 @@ function takeOnePicture() {
       body: JSON.stringify(request),
     }).then((response) => {
       if(!response.ok) {
-        console.log("website said bad");
+        console.log(new Date().getTime(), "website said bad");
         throw response;
       } else {
-        console.log("posted successfully!");
+        console.log(new Date().getTime(), "posted successfully!");
         return response.json();
       }
     }).catch((failure) => {
@@ -132,6 +132,7 @@ function takeOnePicture() {
     // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
     const tmFinally = new Date().getTime();
     const msUntil = Math.max(tmNext - tmFinally, 0);
+    console.log(new Date().getTime(), msUntil, "ms until we take the next picture ", tmNext, tmFinally);
     setTimeout(takeOnePicture, msUntil);
   })
 
