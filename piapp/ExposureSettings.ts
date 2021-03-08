@@ -24,7 +24,22 @@ export class ExposureSettings {
   imagesTaken = 0;
 
   constructor() {
-    this.currentUs = DEFAULT_EXPOSURE_US; // 100ms, 1/10 second
+    const currentHour = new Date().getHours();
+
+    // dayCycle will be 1.0 at midnight, 0.0 at noon.
+    const dayCycle = (Math.cos(currentHour*2*Math.PI / 24) + 1)/2;
+
+    // minIsoEquivMaxExposure represents 2-second, 800-iso exposures as what they'd be as a ISO100 shot.  Then we're going to run checkExposureBounds to get everything back hunky-dory
+    // so at midnight we should really be starting at 16-second iso100 equivalents, so startingUs is going to get calculated as that.  Then it'll be 8-second, ISO200, 4-second ISO400, and finally 2-second ISO800
+    const minIsoEquivMaxExposure = MAX_EXPOSURE_US * (MAX_ISO / MIN_ISO);
+
+    const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*MIN_EXPOSURE_US;
+    this.currentUs = startingUs; // 100ms, 1/10 second
+
+    // currentUs
+    for(var x = 0; x < (MAX_ISO / MIN_ISO); x++) {
+      this.checkExposureBounds();
+    }
     this.currentIso = DEFAULT_ISO;
     this.checkExposureBounds();
   }
