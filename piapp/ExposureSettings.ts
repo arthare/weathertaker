@@ -7,7 +7,7 @@ import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
 const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
-const MIN_EXPOSURE_US = 200; // 1/10000s
+const MIN_EXPOSURE_US = 100; // 1/10000s
 
 const DEFAULT_EXPOSURE_US = MAX_EXPOSURE_US / 2;
 const DEFAULT_ISO = 800;
@@ -69,7 +69,7 @@ export class ExposureSettings {
   }
 
   setupCamera(raspiCamera:Raspistill) {
-    console.log("set camera to expose for " + (this.currentUs/1000).toFixed(1) + "ms @ " + this.currentIso + " ISO");
+    console.log("set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
       shutterspeed: (Math.floor(this.currentUs / 20)*20),
       iso: this.currentIso,
@@ -156,11 +156,11 @@ export class ExposureSettings {
       resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
     }
 
-    await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
     //(resizedImage as any).multiply(multiplyToGetToTarget);
-    await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
     resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
-    await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
+    //await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
 
     this.imagesTaken++;
     return Buffer.from(await resizedImage.toBuffer({format: 'jpg'}));
