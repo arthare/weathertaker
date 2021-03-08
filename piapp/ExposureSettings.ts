@@ -5,7 +5,8 @@ import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-const MAX_EXPOSURE_US = 1000*1000; // 1s
+const MAX_EXPOSURE_US = 10000*1000; // 10s, max exposure for the v2 camera
+const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 100; // 1/10000s
 
 const ADJUST_RATE = 1.75;
@@ -34,16 +35,20 @@ export class ExposureSettings {
     this.checkExposureBounds();
   }
   private checkExposureBounds() {
-    if(this.currentUs > MAX_EXPOSURE_US) {
+    if(this.currentUs > PREFERRED_EXPOSURE_US) {
       // hmm, we're getting to a pretty long exposure here...
       // let's step up the ISO
       if(this.currentIso < MAX_ISO) {
         this.currentUs /= 2;
         this.currentIso *= 2;
       } else {
-        // we're maxed out on ISO too?
-        this.currentUs = MAX_EXPOSURE_US;
-        this.currentIso = MAX_ISO;
+        // we're maxed out on ISO too?  We can keep running up to MAX_EXPOSURE_US I guess
+        if(this.currentUs >= MAX_EXPOSURE_US) {
+          this.currentUs = MAX_EXPOSURE_US;
+          this.currentIso = MAX_ISO;
+        } else {
+          // this is fine.  Stuff's going to get grainy, but we can support it.
+        }
       }
     } else if(this.currentUs < MIN_EXPOSURE_US) {
       // below minimum exposure time.  Let's step down ISO
@@ -65,8 +70,6 @@ export class ExposureSettings {
     raspiCamera.setOptions({
       shutterspeed: this.currentUs,
       iso: this.currentIso,
-      width: 1920,
-      height: 1080,
       flicker: 'off',
       imageEffect: 'none',
       drc: 'off',
@@ -112,6 +115,7 @@ export class ExposureSettings {
 
   async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
     const image = await ImageJs.load(imageBuffer);
+    console.log("image straight outta camera was ", image.width, " x ", image.height);
 
     const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
     console.log("saved to ", savePath);
