@@ -35,6 +35,7 @@ export class ExposureSettings {
 
     const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*MIN_EXPOSURE_US;
     this.currentUs = startingUs; // 100ms, 1/10 second
+    this.currentIso = DEFAULT_ISO;
     
 
     // currentUs
@@ -42,7 +43,6 @@ export class ExposureSettings {
       this.checkExposureBounds();
       console.log(`Starting exposure: ${(this.currentUs/1000).toFixed(2)}ms @ iso ${this.currentIso}`);
     }
-    this.currentIso = DEFAULT_ISO;
     this.checkExposureBounds();
   }
 
