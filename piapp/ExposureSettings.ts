@@ -5,9 +5,12 @@ import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-const MAX_EXPOSURE_US = 8000*1000; // 10s, max exposure for the v2 camera
+const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 100; // 1/10000s
+
+const DEFAULT_EXPOSURE_US = MAX_EXPOSURE_US / 2;
+const DEFAULT_ISO = 800;
 
 const ADJUST_RATE = 2.75;
 
@@ -21,8 +24,8 @@ export class ExposureSettings {
   imagesTaken = 0;
 
   constructor() {
-    this.currentUs = 100000; // 100ms, 1/10 second
-    this.currentIso = 100;
+    this.currentUs = DEFAULT_EXPOSURE_US; // 100ms, 1/10 second
+    this.currentIso = DEFAULT_ISO;
     this.checkExposureBounds();
   }
 
@@ -68,7 +71,7 @@ export class ExposureSettings {
   setupCamera(raspiCamera:Raspistill) {
     console.log("set camera to expose for " + (this.currentUs/1000).toFixed(1) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
-      shutterspeed: this.currentUs,
+      shutterspeed: (Math.floor(this.currentUs / 20)*20),
       iso: this.currentIso,
       flicker: 'off',
       width: 1920,

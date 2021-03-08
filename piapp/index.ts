@@ -41,7 +41,11 @@ function captureFromCurrentCamera():Promise<Buffer> {
     expSettings.setupCamera(raspiCamera);
     return raspiCamera.takePhoto().then(async (image:Buffer) => {
 
-      image = await expSettings.analyzeAndLevelImage(image);
+      try {
+        image = await expSettings.analyzeAndLevelImage(image);
+      } catch(e) {
+        console.log("error while analyzing image: ", e);
+      }
 
       return image;
     }, (failure) => {
