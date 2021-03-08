@@ -88,6 +88,8 @@ function captureFromCurrentCamera():Promise<Buffer> {
   }
 }
 
+
+let submitPromise = Promise.resolve();
 function takeOnePicture() {
   console.log(new Date().getTime(), "commanding to take one picture", raspiCameraValid, webcamValid);
   const tmStart = new Date().getTime();
@@ -103,22 +105,26 @@ function takeOnePicture() {
       apiKey: config.apiKey,
       imageBase64: data.toString('base64'),
     }
-    return fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    }).then((response) => {
-      if(!response.ok) {
-        console.log(new Date().getTime(), "website said bad");
-        throw response;
-      } else {
-        console.log(new Date().getTime(), "posted successfully!");
-        return response.json();
-      }
-    }).catch((failure) => {
-      // oh well...
+
+    submitPromise = submitPromise.then(() => {
+      console.log("submitting image with ", data.length, " bytes");
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      }).then((response) => {
+        if(!response.ok) {
+          console.log(new Date().getTime(), "website said bad");
+          throw response;
+        } else {
+          console.log(new Date().getTime(), "posted successfully!");
+          return response.json();
+        }
+      }).catch((failure) => {
+        // oh well...
+      })
     })
 
   }).catch((failure) => {
