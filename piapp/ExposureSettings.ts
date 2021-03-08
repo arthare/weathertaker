@@ -5,7 +5,7 @@ import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
+const MAX_EXPOSURE_US = 4000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 100; // 1/10000s
 
