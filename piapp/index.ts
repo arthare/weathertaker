@@ -61,6 +61,7 @@ function captureFromCurrentCamera():Promise<Buffer> {
         }
       });
     }).catch((failure) => {
+      console.log("failure from webcam attempt", failure);
       webcamValid = false;
       throw failure;
     })
@@ -71,7 +72,7 @@ function captureFromCurrentCamera():Promise<Buffer> {
 }
 
 function takeOnePicture() {
-  console.log("commanding to take one picture");
+  console.log("commanding to take one picture", raspiCameraValid, webcamValid);
   return captureFromCurrentCamera().then(async (data:Buffer) => {
     let base = 'http://172.105.26.34/api';
     if(platform() === 'win32') {
@@ -103,6 +104,10 @@ function takeOnePicture() {
 
   }).catch((failure) => {
     console.error("Failure to capture: ", failure);
+
+    // uh, if everything messed up, let's just try both cameras again and hope...
+    raspiCameraValid = true;
+    webcamValid = true;
   }).finally(() => {
     setTimeout(takeOnePicture, 15000);
   })
