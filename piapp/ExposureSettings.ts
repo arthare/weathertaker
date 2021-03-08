@@ -9,7 +9,7 @@ const MAX_EXPOSURE_US = 10000*1000; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 100; // 1/10000s
 
-const ADJUST_RATE = 1.75;
+const ADJUST_RATE = 2.75;
 
 // these appear to be the actual capabilities of the camera
 const MAX_ISO = 800;
