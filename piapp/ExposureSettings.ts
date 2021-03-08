@@ -71,6 +71,8 @@ export class ExposureSettings {
       shutterspeed: this.currentUs,
       iso: this.currentIso,
       flicker: 'off',
+      width: 1920,
+      height: 1080,
       imageEffect: 'none',
       drc: 'off',
       awb: 'sun',
