@@ -28,9 +28,12 @@ async function cleanupOldVideos() {
   const allHandles = fs.readdirSync(`${cwd()}/videos/`);
 
   let videoHandleLeaders:{[key:string]:VideoInfo} = {}
-  let reactedToVideos:{[key:string]:number} = await Db.getReactionCounts();
+  let videoInfosByFilename:{[key:string]:VideoInfo} = {}
+  let reactedToVideos:{[key:number]:number} = await Db.getReactionCounts();
 
   activeVideos.forEach((video) => {
+    videoInfosByFilename[video.filename] = video;
+
     if(!videoHandleLeaders[video.handle]) {
       videoHandleLeaders[video.handle] = video;
       return;
@@ -51,17 +54,19 @@ async function cleanupOldVideos() {
     if(fs.lstatSync(handlePath).isDirectory()) {
       const files = fs.readdirSync(handlePath);
       const myHandleLeader = videoHandleLeaders[handle];
+      
       files.forEach((file) => {
+        const myInfo = videoInfosByFilename[file];
         const fullPath = `${handlePath}${file}`;
         if(fs.lstatSync(fullPath).isFile()) {
           debugger;
           
-          if(!myHandleLeader) {
+          if(!myHandleLeader || !myInfo) {
             console.log("Removing ", file, " because I guess there isn't a leader at all for ", handle);
             removedFiles.push(fullPath);
           } else {
             const videoIsLeader = myHandleLeader.filename === file;
-            const videoIsReactedTo = reactedToVideos[file];
+            const videoIsReactedTo = reactedToVideos[myInfo.id];
             const videoIsRecent = (tmNow - fs.statSync(fullPath).mtimeMs) < 60000*60;
             if(videoIsLeader ||
                videoIsRecent ||
@@ -131,6 +136,8 @@ async function generateVideoFor(sourceId:number):Promise<any> {
             sourceId,
             filename: videoPath,
             imageIds: images.map((img) => img.id),
+            tmStart: Math.min(...images.map((image) => image.tmTaken)) / 1000,
+            tmEnd: Math.max(...images.map((image) => image.tmTaken)) / 1000,
           });
         }
       });

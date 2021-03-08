@@ -37,6 +37,17 @@ const expSettings:ExposureSettings = new ExposureSettings();
 let raspiCameraValid = true;
 let webcamValid = true;
 function captureFromCurrentCamera():Promise<Buffer> {
+  
+  try {
+    const photos = fs.readdirSync('./photos');
+    photos.forEach((photo) => {
+      fs.unlinkSync(`./photos/${photo}`);
+    })
+  } catch(e) {
+    console.log("Failed to clean up photos directory: ", e);
+  }
+  
+
   if(raspiCameraValid) {
     expSettings.setupCamera(raspiCamera);
     return raspiCamera.takePhoto().then(async (image:Buffer) => {
@@ -45,10 +56,11 @@ function captureFromCurrentCamera():Promise<Buffer> {
         image = await expSettings.analyzeAndLevelImage(image);
       } catch(e) {
         console.log("error while analyzing image: ", e);
+        throw e;
       }
 
       return image;
-    }, (failure) => {
+    }).catch((failure) => {
       // hmmm, I guess the raspi camera isn't here?
       //try from the webcam.
       console.error("Error from raspi camera: ", failure);

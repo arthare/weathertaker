@@ -10,6 +10,7 @@ export interface ImageSubmissionRequest extends PostRequest {
 export enum ReactionType {
   Wow = 'wow',
   Storm = 'storm',
+  Download = 'download',
 }
 
 export interface ReactSubmission {

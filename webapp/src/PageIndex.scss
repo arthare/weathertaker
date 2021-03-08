@@ -21,22 +21,63 @@
     padding-top: 16px;
   }
   &__Video-Reaction {
+    position: relative;
     margin-right: 8px;
     font-size: 32px;
     color: white;
     text-shadow: 3px 3px 3px black;
     cursor: pointer;
 
+    &--Description {
+      opacity: 0;
+      transition: opacity 0.25s;
+
+      &.Showing {
+        opacity: 1;
+      }
+    }
+
     &:hover {
       color: blue;
     }
   }
-  &__Video-Progress-Canvas {
+  &__Video-PlayPause {
+  }
+  &__Video-Progress {
     position: absolute;
     left: 0px;
     bottom: 0px;
+    width: 300px;
+    height: 100px;
+
+  }
+  &__Video-Progress-Canvas {
+    position: absolute;
+    left: 100px;
     width: 100px;
     height: 100px;
+    top: 0px;
+  }
+  &__Video-Controls {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 300px;
+    height: 100px;
+    display: flex;
+    flex-direction: row;
+  }
+  &__Video-Control {
+    flex: 1 1 0px;
+    color: white;
+    font-size: 50px;
+    padding: 25px;
+    cursor: pointer;
+
+    &:hover {
+      text-shadow: 3px 3px 3px black;
+      color: blue;
+    }
   }
 }
 
