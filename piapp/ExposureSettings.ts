@@ -201,9 +201,9 @@ export class ExposureSettings {
       console.log(new Date().getTime(), "resized");
     }
 
-    console.log(new Date().getTime(), "about to multiply");
-    (resizedImage as any).multiply(multiplyToGetToTarget);
-    console.log(new Date().getTime(), "multiplied");
+    //console.log(new Date().getTime(), "about to multiply");
+    //(resizedImage as any).multiply(multiplyToGetToTarget);
+    //console.log(new Date().getTime(), "multiplied");
     
     //console.log(new Date().getTime(), "about to level");
     //resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
