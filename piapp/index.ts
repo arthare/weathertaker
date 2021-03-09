@@ -109,16 +109,16 @@ function takeOnePicture() {
     }
     let url = `${base}/image-submission`;
 
-    console.log(new Date().getTime(), mySubmitCount, "About to encode base64 string from image");
-    const base64 = await data.toBase64('image/jpeg', {format:'jpg'});
-    console.log(new Date().getTime(), mySubmitCount, "Encoded base64 string from image");
-    const request:ImageSubmissionRequest = {
-      apiKey: config.apiKey,
-      imageBase64: base64
-    }
+    
 
-    submitPromise = submitPromise.then(() => {
-      console.log(new Date().getTime(), mySubmitCount, "submitting image with ", base64.length, " bytes");
+    submitPromise = submitPromise.then(async () => {
+      console.log(new Date().getTime(), mySubmitCount, "About to encode base64 string from image");
+      const base64 = await data.toBase64('image/jpeg', {format:'jpg'});
+      console.log(new Date().getTime(), mySubmitCount, "Encoded base64 string from image");
+      const request:ImageSubmissionRequest = {
+        apiKey: config.apiKey,
+        imageBase64: base64
+      }
       return fetch(url, {
         method: 'POST',
         headers: {
