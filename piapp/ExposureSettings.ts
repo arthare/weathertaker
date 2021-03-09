@@ -169,20 +169,28 @@ export class ExposureSettings {
     } else if(mean > targetMean) {
       this.darker(multiplyToGetToTarget);
     }
+    console.log(new Date().getTime(), "brightened or darked");
 
 
     let resizedImage = image;
     if(image.width !== IMAGE_SUBMISSION_WIDTH || image.height !== IMAGE_SUBMISSION_HEIGHT) {
+      console.log(new Date().getTime(), "about to resize");
       resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
+      console.log(new Date().getTime(), "resized");
     }
 
     //await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
     //(resizedImage as any).multiply(multiplyToGetToTarget);
     //await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
+    console.log(new Date().getTime(), "about to level");
     resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
+    console.log(new Date().getTime(), "leveled");
     //await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
 
     this.imagesTaken++;
-    return Buffer.from(await resizedImage.toBuffer({format: 'jpg'}));
+    console.log(new Date().getTime(), "about to make buffer");
+    const ret = Buffer.from(await resizedImage.toBuffer({format: 'jpg'}));
+    console.log(new Date().getTime(), "made buffer");
+    return ret;
   }
 }
