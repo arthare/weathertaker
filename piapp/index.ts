@@ -6,6 +6,7 @@ import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH}
 import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
+import { execSync } from 'child_process';
 const raspiCamera = new Raspistill();
 
 const IMAGE_CADENCE = 20000;
@@ -37,7 +38,8 @@ const expSettings:ExposureSettings = new ExposureSettings();
 
 let raspiCameraValid = true;
 let webcamValid = true;
-function captureFromCurrentCamera():Promise<ImageJs> {
+let piFailuresInRow = 0;
+function captureFromCurrentCamera():Promise<Buffer> {
   
   try {
     const photos = fs.readdirSync('./photos');
@@ -52,30 +54,35 @@ function captureFromCurrentCamera():Promise<ImageJs> {
   if(raspiCameraValid) {
     expSettings.setupCamera(raspiCamera);
     return raspiCamera.takePhoto().then(async (imageBuffer:Buffer) => {
-
-      let image;
+      piFailuresInRow = 0;
       try {
-        image = await expSettings.analyzeAndLevelImage(imageBuffer);
+        imageBuffer = await expSettings.analyzeAndLevelImage(imageBuffer);
       } catch(e) {
         console.log("error while analyzing image: ", e);
         throw e;
       }
 
-      return image;
+      return imageBuffer;
     }).catch((failure) => {
       // hmmm, I guess the raspi camera isn't here?
       //try from the webcam.
+      piFailuresInRow++;
+      if(piFailuresInRow > 5) {
+        console.log("5 pi camera failures in a row.  rebooting");
+        execSync("sudo reboot");
+        return;
+      }
       console.error("Error from raspi camera: ", failure);
       raspiCameraValid = false;
       return captureFromCurrentCamera();
     })
   } else if(webcamValid) {
-    return new Promise<ImageJs>((resolve, reject) => {
+    return new Promise<Buffer>((resolve, reject) => {
       Webcam.capture( "test_picture", ( err, data:string ) => {
         if(err) {
           reject(err);
         } else {
-          resolve(ImageJs.load(data));
+          resolve(Buffer.from(data, 'base64'));
         }
       });
     }).catch((failure) => {
@@ -98,7 +105,7 @@ function takeOnePicture() {
   console.log(new Date().getTime(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
   const tmStart = new Date().getTime();
   const tmNext = tmStart + IMAGE_CADENCE;
-  return captureFromCurrentCamera().then(async (data:ImageJs) => {
+  return captureFromCurrentCamera().then(async (data:Buffer) => {
     if(expSettings.lastWasExtreme) {
       return;
     }
@@ -113,7 +120,7 @@ function takeOnePicture() {
 
     submitPromise = submitPromise.then(async () => {
       console.log(new Date().getTime(), mySubmitCount, "About to encode base64 string from image");
-      const base64 = await data.toBase64('image/jpeg', {format:'jpg'});
+      const base64 = data.toString('base64');
       console.log(new Date().getTime(), mySubmitCount, "Encoded base64 string from image");
       const request:ImageSubmissionRequest = {
         apiKey: config.apiKey,
