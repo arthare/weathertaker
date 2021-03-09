@@ -211,7 +211,9 @@ export class ExposureSettings {
 
     this.imagesTaken++;
     console.log(new Date().getTime(), "about to make buffer");
-    const ret = Buffer.from(await resizedImage.toBuffer({format: 'jpg'}));
+    const savedToJpg = await resizedImage.toBuffer({format: 'jpg'});
+    console.log(new Date().getTime(), "created jpg buffer");
+    const ret = Buffer.from(savedToJpg);
     console.log(new Date().getTime(), "made buffer");
     return ret;
   }
