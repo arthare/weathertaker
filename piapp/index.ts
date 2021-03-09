@@ -87,14 +87,18 @@ function captureFromCurrentCamera():Promise<Buffer> {
     return Promise.reject("No cameras are known to be working...");
   }
 }
-
-
+	    
 let submitPromise = Promise.resolve();
+let submitCount = 0;
+
 function takeOnePicture() {
-  console.log(new Date().getTime(), "commanding to take one picture", raspiCameraValid, webcamValid);
+  let mySubmitCount = submitCount++;
+
+  console.log(new Date().getTime(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
   const tmStart = new Date().getTime();
   const tmNext = tmStart + IMAGE_CADENCE;
   return captureFromCurrentCamera().then(async (data:Buffer) => {
+    console.log(new Date().getTime(), mySubmitCount, "image captured");
     let base = 'http://172.105.26.34/api';
     if(platform() === 'win32') {
       base = 'http://localhost:2702';
@@ -107,7 +111,7 @@ function takeOnePicture() {
     }
 
     submitPromise = submitPromise.then(() => {
-      console.log("submitting image with ", data.length, " bytes");
+      console.log(new Date().getTime(), mySubmitCount, "submitting image with ", data.length, " bytes");
       return fetch(url, {
         method: 'POST',
         headers: {
@@ -138,7 +142,7 @@ function takeOnePicture() {
     // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
     const tmFinally = new Date().getTime();
     const msUntil = Math.max(tmNext - tmFinally, 0);
-    console.log(new Date().getTime(), msUntil, "ms until we take the next picture ", tmNext, tmFinally);
+    console.log(new Date().getTime(), mySubmitCount, msUntil, "ms until we take the next picture ", tmNext, tmFinally);
     setTimeout(takeOnePicture, msUntil);
   })
 
