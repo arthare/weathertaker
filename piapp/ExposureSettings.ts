@@ -17,6 +17,10 @@ const ADJUST_RATE = 2.75;
 const MAX_ISO = 800;
 const MIN_ISO = 100;
 
+function roundToShutterMultiple(us:number) {
+  return (Math.floor(us / 20)*20)
+}
+
 export class ExposureSettings {
   currentUs = 100000;
   currentIso = 100;
@@ -51,11 +55,21 @@ export class ExposureSettings {
   }
 
   brighter(limitMultiply) {
-    this.currentUs *= Math.min(ADJUST_RATE, limitMultiply);
+    // we need to take into account the rolling shutter interval time.  We can only expose in multiples of 20us, apparently.
+    // otherwise what can happen is:
+    // [currentUs=51us -> rounds to 60us -> too bright] -> [adjusts to 49us -> rounds to 40us -> waaaay darker -> gets adjusted to 51us] -> rounds to 60us -> waaay brighter.
+    // so we end up with this weird visual oscillation as the "perfect" exposure transitions through these zones causing us to bounce between too bright and too dark
+
+    // the current fix says: "if your currentUs is 49, it rounds to 40us.  In order to jump to 60us, you need to require a brightness increase sufficient to go from 40us to 51us (+25%), not just from 49us to 51us (+4%)"
+    const tookUs = roundToShutterMultiple(this.currentUs);
+    this.currentUs = tookUs * Math.min(ADJUST_RATE, limitMultiply);
+
     this.checkExposureBounds();
   }
   darker(limitMultiply) {
-    this.currentUs *= Math.max(limitMultiply, (1 / ADJUST_RATE));
+    // see comment in brighter();
+    const tookUs = roundToShutterMultiple(this.currentUs);
+    this.currentUs = tookUs * Math.max(limitMultiply, (1 / ADJUST_RATE));
     this.checkExposureBounds();
   }
   wayDarker(multiply) {
@@ -100,7 +114,7 @@ export class ExposureSettings {
   setupCamera(raspiCamera:Raspistill) {
     console.log(elapsed(), "set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
-      shutterspeed: (Math.floor(this.currentUs / 20)*20),
+      shutterspeed: roundToShutterMultiple(this.currentUs),
       iso: this.currentIso,
       flicker: 'off',
       width: 1920,
