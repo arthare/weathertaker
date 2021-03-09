@@ -37,7 +37,7 @@ const expSettings:ExposureSettings = new ExposureSettings();
 
 let raspiCameraValid = true;
 let webcamValid = true;
-function captureFromCurrentCamera():Promise<Buffer> {
+function captureFromCurrentCamera():Promise<ImageJs> {
   
   try {
     const photos = fs.readdirSync('./photos');
@@ -51,10 +51,11 @@ function captureFromCurrentCamera():Promise<Buffer> {
 
   if(raspiCameraValid) {
     expSettings.setupCamera(raspiCamera);
-    return raspiCamera.takePhoto().then(async (image:Buffer) => {
+    return raspiCamera.takePhoto().then(async (imageBuffer:Buffer) => {
 
+      let image;
       try {
-        image = await expSettings.analyzeAndLevelImage(image);
+        image = await expSettings.analyzeAndLevelImage(imageBuffer);
       } catch(e) {
         console.log("error while analyzing image: ", e);
         throw e;
@@ -69,12 +70,12 @@ function captureFromCurrentCamera():Promise<Buffer> {
       return captureFromCurrentCamera();
     })
   } else if(webcamValid) {
-    return new Promise<Buffer>((resolve, reject) => {
+    return new Promise<ImageJs>((resolve, reject) => {
       Webcam.capture( "test_picture", ( err, data:string ) => {
         if(err) {
           reject(err);
         } else {
-          resolve(Buffer.from(data, 'base64'));
+          resolve(ImageJs.load(data));
         }
       });
     }).catch((failure) => {
@@ -97,7 +98,7 @@ function takeOnePicture() {
   console.log(new Date().getTime(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
   const tmStart = new Date().getTime();
   const tmNext = tmStart + IMAGE_CADENCE;
-  return captureFromCurrentCamera().then(async (data:Buffer) => {
+  return captureFromCurrentCamera().then(async (data:ImageJs) => {
     if(expSettings.lastWasExtreme) {
       return;
     }
@@ -108,13 +109,16 @@ function takeOnePicture() {
     }
     let url = `${base}/image-submission`;
 
+    console.log(new Date().getTime(), mySubmitCount, "About to encode base64 string from image");
+    const base64 = await data.toBase64('image/jpeg', {format:'jpg'});
+    console.log(new Date().getTime(), mySubmitCount, "Encoded base64 string from image");
     const request:ImageSubmissionRequest = {
       apiKey: config.apiKey,
-      imageBase64: data.toString('base64'),
+      imageBase64: base64
     }
 
     submitPromise = submitPromise.then(() => {
-      console.log(new Date().getTime(), mySubmitCount, "submitting image with ", data.length, " bytes");
+      console.log(new Date().getTime(), mySubmitCount, "submitting image with ", base64.length, " bytes");
       return fetch(url, {
         method: 'POST',
         headers: {

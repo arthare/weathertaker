@@ -147,7 +147,7 @@ export class ExposureSettings {
     return {low:results[0], mean:results[1], high:results[2]};
   }
 
-  async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
+  async analyzeAndLevelImage(imageBuffer:Buffer):Promise<ImageJs> {
     const image = await ImageJs.load(imageBuffer);
     console.log(new Date().getTime(), "image straight outta camera was ", image.width, " x ", image.height);
 
@@ -210,11 +210,6 @@ export class ExposureSettings {
     //console.log(new Date().getTime(), "leveled");
 
     this.imagesTaken++;
-    console.log(new Date().getTime(), "about to make buffer");
-    const savedToJpg = await resizedImage.toBuffer({format: 'jpg'});
-    console.log(new Date().getTime(), "created jpg buffer");
-    const ret = Buffer.from(savedToJpg);
-    console.log(new Date().getTime(), "made buffer");
-    return ret;
+    return resizedImage;
   }
 }
