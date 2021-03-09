@@ -98,6 +98,9 @@ function takeOnePicture() {
   const tmStart = new Date().getTime();
   const tmNext = tmStart + IMAGE_CADENCE;
   return captureFromCurrentCamera().then(async (data:Buffer) => {
+    if(expSettings.lastWasExtreme) {
+      return;
+    }
     console.log(new Date().getTime(), mySubmitCount, "image captured");
     let base = 'http://172.105.26.34/api';
     if(platform() === 'win32') {

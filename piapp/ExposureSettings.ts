@@ -21,6 +21,7 @@ export class ExposureSettings {
   currentUs = 100000;
   currentIso = 100;
   imagesTaken = 0;
+  lastWasExtreme = false;
 
   constructor() {
     const currentHour = new Date().getHours() + (new Date().getMinutes()/60);
@@ -55,6 +56,14 @@ export class ExposureSettings {
   }
   darker(limitMultiply) {
     this.currentUs *= Math.max(limitMultiply, (1 / ADJUST_RATE));
+    this.checkExposureBounds();
+  }
+  wayDarker(multiply) {
+    this.currentUs *= multiply;
+    this.checkExposureBounds();
+  }
+  wayBrighter(multiply) {
+    this.currentUs *= multiply;
     this.checkExposureBounds();
   }
   private checkExposureBounds() {
@@ -164,10 +173,23 @@ export class ExposureSettings {
     const targetMean = peakHistoBrightness / 2;
     const multiplyToGetToTarget = targetMean / mean;
     console.log(new Date().getTime(), "mean brightness = ", mean.toFixed(1));
-    if(mean < targetMean) {
+
+    if(mean >= peakHistoBrightness*0.97 && !this.lastWasExtreme) {
+
+      this.wayDarker(0.05);
+      this.lastWasExtreme = true;
+    } else if(mean < peakHistoBrightness*0.03 && !this.lastWasExtreme) {
+
+      this.wayBrighter(20);
+      this.lastWasExtreme = true;
+    } else if(mean < targetMean) {
+
       this.brighter(multiplyToGetToTarget);
+      this.lastWasExtreme = false;
     } else if(mean > targetMean) {
+
       this.darker(multiplyToGetToTarget);
+      this.lastWasExtreme = false;
     }
     console.log(new Date().getTime(), "brightened or darked");
 
@@ -179,13 +201,13 @@ export class ExposureSettings {
       console.log(new Date().getTime(), "resized");
     }
 
-    //await resizedImage.save(`modding-${this.imagesTaken}-1.jpg`, {format: 'jpg'});
-    //(resizedImage as any).multiply(multiplyToGetToTarget);
-    //await resizedImage.save(`modding-${this.imagesTaken}-2.jpg`, {format: 'jpg'});
-    console.log(new Date().getTime(), "about to level");
-    resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
-    console.log(new Date().getTime(), "leveled");
-    //await resizedImage.save(`modding-${this.imagesTaken}-3.jpg`, {format: 'jpg'});
+    console.log(new Date().getTime(), "about to multiply");
+    (resizedImage as any).multiply(multiplyToGetToTarget);
+    console.log(new Date().getTime(), "multiplied");
+    
+    //console.log(new Date().getTime(), "about to level");
+    //resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
+    //console.log(new Date().getTime(), "leveled");
 
     this.imagesTaken++;
     console.log(new Date().getTime(), "about to make buffer");
