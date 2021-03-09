@@ -2,7 +2,10 @@ import express from 'express';
 import * as core from "express-serve-static-core";
 
 export function setCorsHeaders(req:core.Request, res:core.Response) {
-  const originValue = req.headers['origin'] || req.headers['Host'] || 'tourjs.ca';
+  console.log("headers ", req.headers);
+  const rawOrigin = req.headers['origin'];
+  const originValue = rawOrigin || 'fastsky.ca';
+  console.log("originValue ", originValue);
   res.setHeader('Access-Control-Allow-Origin', originValue);
   res.setHeader('Access-Control-Allow-Headers', '*');
 }
@@ -10,6 +13,7 @@ export function setCorsHeaders(req:core.Request, res:core.Response) {
 export function setUpCors(app:core.Express) {
   
   app.options('*', (req:core.Request, res:any) => {
+    console.log("setUpCors headers ", req.headers);
     setCorsHeaders(req, res);
     
     res.end();
@@ -34,8 +38,7 @@ export function postStartup(req:core.Request, res:core.Response):Promise<any> {
     
   return new Promise((resolve, reject) => {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', handleCors(req, ["http://localhost:3000", "https://tourjs.ca", "https://www.tourjs.ca"]));
-      res.setHeader('Access-Control-Allow-Headers', '*');
+      setCorsHeaders(req, res);
       var body = [];
       req.on('data', (chunk:any) => {
           body.push(chunk);

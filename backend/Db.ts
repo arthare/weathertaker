@@ -156,7 +156,7 @@ export default class Db {
     
     return getDb().then((db) => {
       return new Promise<number>((resolve, reject) => {
-        db.execute('insert into reactions (videoid,reactionid,srcip,tm) values (?,?,?,unix_timestamp())', [videoId, how, ip], (err, result:any) => {
+        db.execute('insert into reactions (videoid,reactionid,srcip,tm) values (?,?,?,unix_timestamp()) on duplicate key update reactionid=?', [videoId, how, ip, how], (err, result:any) => {
           if(err) {
             console.error("Tried to insert reaction ", how, ip, videoId, " but failed: ", err);
             reject(err);

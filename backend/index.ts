@@ -5,7 +5,7 @@ import Db, { VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
-import {ImageSubmissionRequest, ReactSubmission} from '../types/http';
+import {ImageSubmissionRequest, ReactionType, ReactSubmission} from '../types/http';
 import { resolveNaptr } from 'dns';
 
 let app = <core.Express>express();
@@ -114,7 +114,15 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
 app.post('/react', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ReactSubmission) => {
-    return Db.submitReaction(query.how, req.ip, query.videoId);
+    let ip = req.headers['x-forwarded-for'] || req.ip; // x-forwarded-for is because on the server we're living behind a proxy
+
+    if(query.how === ReactionType.Download) {
+      // if they're downloading, don't replace their other reactions
+      ip += '-download';
+    }
+
+    console.log("ip to use: ", ip);
+    return Db.submitReaction(query.how, ip as string, query.videoId);
   }).then(handleSuccess(req,res), handleFailure(req,res));
 
 })

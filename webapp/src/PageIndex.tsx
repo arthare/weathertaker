@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import './PageIndex.scss';
 import {Helmet} from 'react-helmet'
 
+let base = 'http://fastsky.ca/api/';
+let baseDebug = window.location.hostname === 'localhost' ? 'http://localhost:2702/' : base;
+
+function refreshReactionCounts(id:number) {
+  const reactionCountUrl = `${baseDebug}reaction-count?videoId=${id}`;
+  return fetch(reactionCountUrl).then((response) => response.json());
+}
 const PageIndex = () => {
 
   const [videoUrl, setVideoUrl] = useState<string|undefined>(undefined);
@@ -9,13 +16,11 @@ const PageIndex = () => {
   const [reactionCount, setReactionCount] = useState<any>(undefined);
   const [videoPlaying, setVideoPlaying] = useState<boolean>(false);
 
-  let base = 'http://172.105.26.34/api/';
-  let baseDebug = window.location.hostname === 'localhost' ? 'http://localhost:2702/' : base;
   let videoMetaUrl = `${base}video`;
 
   useEffect(() => {
     fetch(videoMetaUrl).then((response) => response.json()).then((response) => {
-      setVideoUrl(`http://172.105.26.34/videos/${response.handle}/${response.filename}`);
+      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
       setVideoResponse(response);
     })
   }, [videoMetaUrl]);
@@ -32,9 +37,7 @@ const PageIndex = () => {
   useEffect(() => {
     // reaction counts
     if(videoResponse) {
-      const reactionCountUrl = `${baseDebug}reaction-count?videoId=${videoResponse.id}`;
-      console.log("fetching ", reactionCountUrl);
-      fetch(reactionCountUrl).then((response) => response.json()).then((response) => {
+      refreshReactionCounts(videoResponse.id).then((response) => {
         console.log("reaction count: ", response);
         setReactionCount(response);
       })
@@ -77,8 +80,8 @@ const PageIndex = () => {
     if(videoUrl && videoResponse) {
       console.log("video response = ", videoResponse);
       const linky = document.createElement('a');
-      linky.href = `${base}download-video?handle=${videoResponse.handle}&filename=${videoResponse.filename}`
-      linky.download = `weathertaker-video.mp4`;
+      linky.href = `${base}download-video?id=${videoResponse.id}`
+      linky.download = `fastsky-video.mp4`;
       linky.target="_blank";
       linky.download = "true";
       document.body.appendChild(linky);
@@ -90,7 +93,7 @@ const PageIndex = () => {
   const onError = (e:any) => {
     console.log("oh no, an error: ", e);
     fetch(videoMetaUrl).then((response) => response.json()).then((response) => {
-      setVideoUrl(`http://172.105.26.34/videos/${response.handle}/${response.filename}`);
+      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
     })
   }
 
@@ -102,6 +105,11 @@ const PageIndex = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+    }).finally(() => {
+      refreshReactionCounts(videoResponse.id).then((response) => {
+        console.log("reaction count: ", response);
+        setReactionCount(response);
+      })
     })
   }
 

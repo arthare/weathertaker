@@ -1,6 +1,6 @@
 import {Raspistill} from 'node-raspistill';
 import {Image as ImageJs} from 'image-js';
-import {dassert} from './Utils';
+import {dassert, elapsed} from './Utils';
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 
 
@@ -98,7 +98,7 @@ export class ExposureSettings {
   }
 
   setupCamera(raspiCamera:Raspistill) {
-    console.log(new Date().getTime(), "set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
+    console.log(elapsed(), "set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
       shutterspeed: (Math.floor(this.currentUs / 20)*20),
       iso: this.currentIso,
@@ -149,7 +149,7 @@ export class ExposureSettings {
 
   async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
     const image = await ImageJs.load(imageBuffer);
-    console.log(new Date().getTime(), "image straight outta camera was ", image.width, " x ", image.height);
+    console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
     //const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
     //console.log("saved to ", savePath);
@@ -159,7 +159,7 @@ export class ExposureSettings {
     const histo = (image as any).getHistograms({maxSlots: peakHistoBrightness, useAlpha: false});
 
     const histoResult = this.analyzeHistogram(2.5, 97.5, peakHistoBrightness, histo);
-    console.log(new Date().getTime(), "histoResult = ", histoResult);
+    console.log(elapsed(), "histoResult = ", histoResult);
 
     let sum = 0;
     let count = 0;
@@ -172,7 +172,7 @@ export class ExposureSettings {
     const mean = sum / count;
     const targetMean = peakHistoBrightness / 2;
     const multiplyToGetToTarget = targetMean / mean;
-    console.log(new Date().getTime(), "mean brightness = ", mean.toFixed(1));
+    console.log(elapsed(), "mean brightness = ", mean.toFixed(1));
 
     if(mean >= peakHistoBrightness*0.97 && !this.lastWasExtreme) {
 
@@ -191,23 +191,23 @@ export class ExposureSettings {
       this.darker(multiplyToGetToTarget);
       this.lastWasExtreme = false;
     }
-    console.log(new Date().getTime(), "brightened or darked");
+    console.log(elapsed(), "brightened or darked");
 
 
     let resizedImage = image;
     if(image.width !== IMAGE_SUBMISSION_WIDTH || image.height !== IMAGE_SUBMISSION_HEIGHT) {
-      console.log(new Date().getTime(), "about to resize");
+      console.log(elapsed(), "about to resize");
       resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
-      console.log(new Date().getTime(), "resized");
+      console.log(elapsed(), "resized");
     }
 
-    //console.log(new Date().getTime(), "about to multiply");
+    //console.log(elapsed(), "about to multiply");
     //(resizedImage as any).multiply(multiplyToGetToTarget);
-    //console.log(new Date().getTime(), "multiplied");
+    //console.log(elapsed(), "multiplied");
     
-    //console.log(new Date().getTime(), "about to level");
+    //console.log(elapsed(), "about to level");
     //resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
-    //console.log(new Date().getTime(), "leveled");
+    //console.log(elapsed(), "leveled");
 
     this.imagesTaken++;
     return imageBuffer;

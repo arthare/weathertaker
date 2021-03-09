@@ -7,6 +7,7 @@ import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
 import { execSync } from 'child_process';
+import { elapsed } from './Utils';
 const raspiCamera = new Raspistill();
 
 const IMAGE_CADENCE = 20000;
@@ -99,18 +100,19 @@ function captureFromCurrentCamera():Promise<Buffer> {
 let submitPromise = Promise.resolve();
 let submitCount = 0;
 
+
 function takeOnePicture() {
   let mySubmitCount = submitCount++;
 
-  console.log(new Date().getTime(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
-  const tmStart = new Date().getTime();
+  console.log(elapsed(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
+  const tmStart = elapsed();
   const tmNext = tmStart + IMAGE_CADENCE;
   return captureFromCurrentCamera().then(async (data:Buffer) => {
     if(expSettings.lastWasExtreme) {
       return;
     }
-    console.log(new Date().getTime(), mySubmitCount, "image captured");
-    let base = 'http://172.105.26.34/api';
+    console.log(elapsed(), mySubmitCount, "image captured");
+    let base = 'http://fastsky.ca/api';
     if(platform() === 'win32') {
       base = 'http://localhost:2702';
     }
@@ -119,9 +121,9 @@ function takeOnePicture() {
     
 
     submitPromise = submitPromise.then(async () => {
-      console.log(new Date().getTime(), mySubmitCount, "About to encode base64 string from image");
+      console.log(elapsed(), mySubmitCount, "About to encode base64 string from image");
       const base64 = data.toString('base64');
-      console.log(new Date().getTime(), mySubmitCount, "Encoded base64 string from image");
+      console.log(elapsed(), mySubmitCount, "Encoded base64 string from image");
       const request:ImageSubmissionRequest = {
         apiKey: config.apiKey,
         imageBase64: base64
@@ -134,14 +136,15 @@ function takeOnePicture() {
         body: JSON.stringify(request),
       }).then((response) => {
         if(!response.ok) {
-          console.log(new Date().getTime(), "website said bad");
+          console.log(elapsed(), "website said bad");
           throw response;
         } else {
-          console.log(new Date().getTime(), "posted successfully!");
+          console.log(elapsed(), "posted successfully!");
           return response.json();
         }
       }).catch((failure) => {
         // oh well...
+        console.log(elapsed(), mySubmitCount, "Failed to submit image: ", failure);
       })
     })
 
@@ -154,9 +157,9 @@ function takeOnePicture() {
   }).finally(() => {
 
     // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
-    const tmFinally = new Date().getTime();
+    const tmFinally = elapsed();
     const msUntil = Math.max(tmNext - tmFinally, 0);
-    console.log(new Date().getTime(), mySubmitCount, msUntil, "ms until we take the next picture ", tmNext, tmFinally);
+    console.log(elapsed(), mySubmitCount, msUntil, "ms until we take the next picture ", tmNext, tmFinally);
     setTimeout(takeOnePicture, msUntil);
   })
 
