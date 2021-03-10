@@ -3,7 +3,8 @@ import {Image as ImageJs} from 'image-js';
 import {dassert, elapsed} from './Utils';
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 import fs from 'fs';
-import { execSync } from 'child_process';
+import { exec, execSync } from 'child_process';
+import { rejects } from 'assert';
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
 const MAX_EXPOSURE_US = 3999980; // 10s, max exposure for the v2 camera
@@ -112,22 +113,35 @@ export class ExposureSettings {
 
   }
 
-  takePhoto() {
+  takePhoto():Promise<Buffer> {
     const exposeUs = roundToShutterMultiple(this.currentUs);
     console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
     console.log(elapsed(), "about to take picture");
 
-    const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
-    console.log("running camera command ", cameraCommand);
-    execSync(cameraCommand);
-    console.log(elapsed(), "took picture");
-
-    //execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/922p.jpg`);
-    //console.log(elapsed(), "done writing to disk");
-    const buffer = fs.readFileSync('./tmp/from-camera.jpg');
-    console.log(elapsed(), `read ./tmp/from-camera.jpg with ${buffer.byteLength} bytes`);
-    return Promise.resolve(buffer);
+    return new Promise((resolve, reject) => {
+      const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
+      console.log("running camera command ", cameraCommand);
+      exec(cameraCommand, (err, stdout, stderr) => {
+        if(err) {
+          return reject(err);
+        }
+        console.log(elapsed(), "took picture");
+  
+        //execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/922p.jpg`);
+        //console.log(elapsed(), "done writing to disk");
+        fs.readFile('./tmp/from-camera.jpg', (err, data:Buffer) => {
+          if(err) {
+            return reject(err);
+          } else {
+            console.log(elapsed(), `read ./tmp/from-camera.jpg with ${buffer.byteLength} bytes`);
+            resolve(data);
+          }
+          
+        });
+  
+      });
+    })
   }
   setupCamera(raspiCamera:Raspistill) {
     //console.log(elapsed(), "set camera to expose for " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
