@@ -126,7 +126,8 @@ export class ExposureSettings {
       awb: 'sun',
       quality: 90,
     }
-    const buffer:Buffer = execSync(`raspistill -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o -`);
+    // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
+    const buffer:Buffer = execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o -`);
     console.log(elapsed(), `execSync done with ${buffer.byteLength} bytes`);
     return Promise.resolve(buffer);
   }
