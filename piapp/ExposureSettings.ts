@@ -6,7 +6,7 @@ import fs from 'fs';
 import { execSync } from 'child_process';
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
+const MAX_EXPOSURE_US = 3999980; // 10s, max exposure for the v2 camera
 const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
 const MIN_EXPOSURE_US = 60; // 1/10000s
 
@@ -129,7 +129,7 @@ export class ExposureSettings {
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
     console.log(elapsed(), "about to take picture");
 
-    const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 922 -drc off -ex off -md 5 -n -o ./tmp/from-camera.jpg`;
+    const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 922 -bm -drc off -ex off -md 5 -n -o ./tmp/from-camera.jpg`;
     console.log("running camera command ", cameraCommand);
     execSync(cameraCommand);
     console.log(elapsed(), "took picture");
