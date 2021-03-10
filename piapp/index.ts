@@ -53,8 +53,7 @@ function captureFromCurrentCamera():Promise<Buffer> {
   
 
   if(raspiCameraValid) {
-    expSettings.setupCamera(raspiCamera);
-    return raspiCamera.takePhoto().then(async (imageBuffer:Buffer) => {
+    return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
       piFailuresInRow = 0;
       try {
         imageBuffer = await expSettings.analyzeAndLevelImage(imageBuffer);

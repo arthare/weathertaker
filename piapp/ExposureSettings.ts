@@ -127,7 +127,13 @@ export class ExposureSettings {
       quality: 90,
     }
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
-    const buffer:Buffer = execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o -`);
+    console.log(elapsed(), "about to take picture");
+    execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o ./tmp/from-camera.jpg`);
+    console.log(elapsed(), "took picture");
+
+    execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/1080p.jpg`);
+    console.log(elapsed(), "done writing to disk");
+    const buffer = fs.readFileSync('./tmp/1080p.jpg');
     console.log(elapsed(), `execSync done with ${buffer.byteLength} bytes`);
     return Promise.resolve(buffer);
   }
@@ -178,9 +184,6 @@ export class ExposureSettings {
     console.log(elapsed(), "writing to disk ", imageBuffer.byteLength);
     fs.writeFileSync('./tmp/from-camera.jpg', imageBuffer);
     console.log(elapsed(), "done writing to disk, starting imagemagick ");
-    execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/1080p.jpg`);
-    console.log(elapsed(), "done writing to disk");
-    imageBuffer = fs.readFileSync('./tmp/1080p.jpg');
     console.log(elapsed(), "done reading from disk");
 
     const image = await ImageJs.load(imageBuffer);

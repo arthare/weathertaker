@@ -5,7 +5,7 @@ import Db, { VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
-import {ImageSubmissionRequest, ReactionType, ReactSubmission} from '../types/http';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission} from '../types/http';
 import { resolveNaptr } from 'dns';
 
 let app = <core.Express>express();
@@ -100,9 +100,9 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
     console.log("loaded ", image.width + " x " + image.height + " image");
-    if(image.width !== 1920 || image.height !== 1080) {
+    if(image.height !== IMAGE_SUBMISSION_HEIGHT) {
       debugger; // hey developer, something messed up!
-      throw new Error("Image needs to be 1920x1080.  It's the browser-app's fault if not.");
+      throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
     }
     return Db.imageSubmission(query);
   }).then(handleSuccess(req,res), (failure) => {
