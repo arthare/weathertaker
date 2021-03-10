@@ -1,6 +1,9 @@
 .Index {
   &__Video {
     width: 100vw;
+    bottom: 0px;
+    position: absolute;
+    left: 0px;
   }
   &__Video-Holder {
 
@@ -85,6 +88,9 @@
   .Index {
     &__Video {
       width: 100vh;
+      top: 0px;
+      position: auto;
+      left: auto;
     }
     &__Video-Holder {
       width: 100vh;

@@ -8,6 +8,7 @@ import fs from 'fs';
 import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission} from '../types/http';
 import { resolveNaptr } from 'dns';
 
+
 let app = <core.Express>express();
 
 export interface ImageRequest {
@@ -131,6 +132,7 @@ app.get('/image', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return Db.getTestImage(req.query.id).then(handleSuccess(req,res), handleFailure(req,res));
 });
+
 
 setUpCors(app);
 app.listen(2702);

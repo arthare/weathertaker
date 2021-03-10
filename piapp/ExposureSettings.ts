@@ -120,7 +120,7 @@ export class ExposureSettings {
     console.log(elapsed(), "about to take picture");
 
     return new Promise((resolve, reject) => {
-      const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
+      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
       console.log("running camera command ", cameraCommand);
       exec(cameraCommand, (err, stdout, stderr) => {
         if(err) {
@@ -134,7 +134,7 @@ export class ExposureSettings {
           if(err) {
             return reject(err);
           } else {
-            console.log(elapsed(), `read ./tmp/from-camera.jpg with ${buffer.byteLength} bytes`);
+            console.log(elapsed(), `read ./tmp/from-camera.jpg with ${data.byteLength} bytes`);
             resolve(data);
           }
           
@@ -189,7 +189,9 @@ export class ExposureSettings {
     const image = await ImageJs.load(imageBuffer);
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
-    //const savePath = `./test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
+    const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
+    fs.writeFile(savePath, imageBuffer, () => {});
+    
     //console.log("saved to ", savePath);
     //image.save(savePath, {format: 'jpg'});
 
