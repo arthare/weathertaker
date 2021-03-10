@@ -134,7 +134,7 @@ export class ExposureSettings {
           if(err) {
             return reject(err);
           } else {
-            console.log(elapsed(), `read ./tmp/from-camera.jpg with ${buffer.byteLength} bytes`);
+            console.log(elapsed(), `read ./tmp/from-camera.jpg with ${data.byteLength} bytes`);
             resolve(data);
           }
           
