@@ -135,10 +135,10 @@ function takeOnePicture() {
         body: JSON.stringify(request),
       }).then((response) => {
         if(!response.ok) {
-          console.log(elapsed(), "website said bad");
+          console.log(elapsed(), mySubmitCount, "website said bad");
           throw response;
         } else {
-          console.log(elapsed(), "posted successfully!");
+          console.log(elapsed(), mySubmitCount, "posted successfully!");
           return response.json();
         }
       }).catch((failure) => {
