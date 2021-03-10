@@ -112,10 +112,10 @@ export class ExposureSettings {
 
   }
 
-  setupCamera(raspiCamera:Raspistill) {
+  takePhoto() {
     const exposeUs = roundToShutterMultiple(this.currentUs);
-    console.log(elapsed(), "set camera to expose for " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
-    raspiCamera.setOptions({
+    console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
+    const setup = {
       shutterspeed: exposeUs,
       iso: this.currentIso,
       flicker: 'off',
@@ -125,7 +125,14 @@ export class ExposureSettings {
       drc: 'off',
       awb: 'sun',
       quality: 90,
-    });
+    }
+    const buffer:Buffer = execSync(`raspistill -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o -`);
+    console.log(elapsed(), `execSync done with ${buffer.byteLength} bytes`);
+    return Promise.resolve(buffer);
+  }
+  setupCamera(raspiCamera:Raspistill) {
+    //console.log(elapsed(), "set camera to expose for " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
+    //raspiCamera.setOptions();
   }
 
   private analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:number, nHisto:number, histos:number[][]):{low:number, mean:number, high:number} {
