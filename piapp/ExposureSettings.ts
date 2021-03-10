@@ -2,7 +2,8 @@ import {Raspistill} from 'node-raspistill';
 import {Image as ImageJs} from 'image-js';
 import {dassert, elapsed} from './Utils';
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
-
+import fs from 'fs';
+import { execSync } from 'child_process';
 
 // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
 const MAX_EXPOSURE_US = 2000*1000; // 10s, max exposure for the v2 camera
@@ -118,8 +119,8 @@ export class ExposureSettings {
       shutterspeed: exposeUs,
       iso: this.currentIso,
       flicker: 'off',
-      width: 1920,
-      height: 1080,
+      width: 3280,
+      height: 2464,
       imageEffect: 'none',
       drc: 'off',
       awb: 'sun',
@@ -164,6 +165,16 @@ export class ExposureSettings {
   }
 
   async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
+
+    
+    console.log(elapsed(), "writing to disk ", imageBuffer.byteLength);
+    fs.writeFileSync('./tmp/from-camera.jpg', imageBuffer);
+    console.log(elapsed(), "done writing to disk, starting imagemagick ");
+    execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/1080p.jpg`);
+    console.log(elapsed(), "done writing to disk");
+    imageBuffer = fs.readFileSync('./tmp/1080p.jpg');
+    console.log(elapsed(), "done reading from disk");
+
     const image = await ImageJs.load(imageBuffer);
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
