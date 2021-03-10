@@ -119,8 +119,8 @@ export class ExposureSettings {
       shutterspeed: exposeUs,
       iso: this.currentIso,
       flicker: 'off',
-      width: 3280,
-      height: 2464,
+      width: 1640,
+      height: 922,
       imageEffect: 'none',
       drc: 'off',
       awb: 'sun',
@@ -128,13 +128,13 @@ export class ExposureSettings {
     }
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
     console.log(elapsed(), "about to take picture");
-    execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -drc off -ex off -md 2 -n -o ./tmp/from-camera.jpg`);
+    execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 922 -drc off -ex off -md 5 -n -o ./tmp/from-camera.jpg`);
     console.log(elapsed(), "took picture");
 
-    execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/1080p.jpg`);
-    console.log(elapsed(), "done writing to disk");
-    const buffer = fs.readFileSync('./tmp/1080p.jpg');
-    console.log(elapsed(), `execSync done with ${buffer.byteLength} bytes`);
+    //execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/922p.jpg`);
+    //console.log(elapsed(), "done writing to disk");
+    const buffer = fs.readFileSync('./tmp/from-camera.jpg');
+    console.log(elapsed(), `read from-camera.jpg with ${buffer.byteLength} bytes`);
     return Promise.resolve(buffer);
   }
   setupCamera(raspiCamera:Raspistill) {

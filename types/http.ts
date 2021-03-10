@@ -18,5 +18,5 @@ export interface ReactSubmission {
   videoId:number|string;
 }
 
-export const IMAGE_SUBMISSION_WIDTH = 1920;
-export const IMAGE_SUBMISSION_HEIGHT = 1080;
+export const IMAGE_SUBMISSION_WIDTH = 1640;
+export const IMAGE_SUBMISSION_HEIGHT = 922;
