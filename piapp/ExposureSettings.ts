@@ -128,7 +128,10 @@ export class ExposureSettings {
     }
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
     console.log(elapsed(), "about to take picture");
-    execSync(`raspistill --timeout 100 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 922 -drc off -ex off -md 5 -n -o ./tmp/from-camera.jpg`);
+
+    const cameraCommand = `raspistill --timeout 1000 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 922 -drc off -ex off -md 5 -n -o ./tmp/from-camera.jpg`;
+    console.log("running camera command ", cameraCommand);
+    execSync(cameraCommand);
     console.log(elapsed(), "took picture");
 
     //execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 90% ./tmp/922p.jpg`);
@@ -180,12 +183,6 @@ export class ExposureSettings {
 
   async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
 
-    
-    console.log(elapsed(), "writing to disk ", imageBuffer.byteLength);
-    fs.writeFileSync('./tmp/from-camera.jpg', imageBuffer);
-    console.log(elapsed(), "done writing to disk, starting imagemagick ");
-    console.log(elapsed(), "done reading from disk");
-
     const image = await ImageJs.load(imageBuffer);
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
@@ -230,14 +227,6 @@ export class ExposureSettings {
       this.lastWasExtreme = false;
     }
     console.log(elapsed(), "brightened or darked");
-
-
-    let resizedImage = image;
-    if(image.width !== IMAGE_SUBMISSION_WIDTH || image.height !== IMAGE_SUBMISSION_HEIGHT) {
-      console.log(elapsed(), "about to resize");
-      resizedImage = image.resize({width: IMAGE_SUBMISSION_WIDTH, height: IMAGE_SUBMISSION_HEIGHT});
-      console.log(elapsed(), "resized");
-    }
 
     //console.log(elapsed(), "about to multiply");
     //(resizedImage as any).multiply(multiplyToGetToTarget);
