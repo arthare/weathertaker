@@ -19,4 +19,4 @@ export interface ReactSubmission {
 }
 
 export const IMAGE_SUBMISSION_WIDTH = 1640;
-export const IMAGE_SUBMISSION_HEIGHT = 922;
+export const IMAGE_SUBMISSION_HEIGHT = 1232;
