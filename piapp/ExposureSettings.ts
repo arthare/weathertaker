@@ -112,9 +112,10 @@ export class ExposureSettings {
   }
 
   setupCamera(raspiCamera:Raspistill) {
-    console.log(elapsed(), "set camera to expose for " + (this.currentUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
+    const exposeUs = roundToShutterMultiple(this.currentUs);
+    console.log(elapsed(), "set camera to expose for " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     raspiCamera.setOptions({
-      shutterspeed: roundToShutterMultiple(this.currentUs),
+      shutterspeed: exposeUs,
       iso: this.currentIso,
       flicker: 'off',
       width: 1920,
@@ -122,6 +123,7 @@ export class ExposureSettings {
       imageEffect: 'none',
       drc: 'off',
       awb: 'sun',
+      quality: 90,
     });
   }
 
