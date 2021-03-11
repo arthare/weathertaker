@@ -44,7 +44,9 @@ let piFailuresInRow = 0;
 function getFromFsWebcam():Promise<Buffer> {
 
   return new Promise((resolve, reject) => {
-    const command = `fswebcam -S 50 -F 1 -r 1280x720 --scale ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
+    const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
+    const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
+    const command = `fswebcam -S 50 -F 1 -r 1280x720 --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
     console.log("Running fswebcam: ", command);
     exec(command, (err, stdout, stderr) => {
       if(err) {
