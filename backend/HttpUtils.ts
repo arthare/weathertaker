@@ -2,10 +2,8 @@ import express from 'express';
 import * as core from "express-serve-static-core";
 
 export function setCorsHeaders(req:core.Request, res:core.Response) {
-  console.log("headers ", req.headers);
   const rawOrigin = req.headers['origin'];
   const originValue = rawOrigin || 'fastsky.ca';
-  console.log("originValue ", originValue);
   res.setHeader('Access-Control-Allow-Origin', originValue);
   res.setHeader('Access-Control-Allow-Headers', '*');
 }
@@ -13,7 +11,6 @@ export function setCorsHeaders(req:core.Request, res:core.Response) {
 export function setUpCors(app:core.Express) {
   
   app.options('*', (req:core.Request, res:any) => {
-    console.log("setUpCors headers ", req.headers);
     setCorsHeaders(req, res);
     
     res.end();

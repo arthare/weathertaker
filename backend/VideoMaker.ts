@@ -151,6 +151,7 @@ async function generateVideoFor(sourceId:number):Promise<any> {
 
 async function checkForWork() {
 
+  console.log("Video maker checking for work.  Working? ", working, " stale source IDs: ", stale);
   if(!working) {
     // time to find a stale thing to do!
     let staleSourceIds = [];
@@ -168,7 +169,7 @@ async function checkForWork() {
         working = true; // we're going to work!
         await generateVideoFor(sourceId);
       } catch(e) {
-        console.log("Error: ", e);
+        console.log("Error making videos: ", e);
       } finally {
         working = false;
         stale[sourceId] = false;
@@ -180,7 +181,7 @@ async function checkForWork() {
 
   setTimeout(() => {
     checkForWork();
-  }, 1000);
+  }, 30000);
 }
 
 export function notifyDirtySource(sourceId:number) {

@@ -6,7 +6,7 @@ import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH}
 import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
-import { execSync } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { elapsed } from './Utils';
 const raspiCamera = new Raspistill();
 
@@ -40,6 +40,29 @@ const expSettings:ExposureSettings = new ExposureSettings();
 let raspiCameraValid = true;
 let webcamValid = true;
 let piFailuresInRow = 0;
+
+function getFromFsWebcam():Promise<Buffer> {
+
+  return new Promise((resolve, reject) => {
+    const command = `fswebcam -S 50 -F 1 -r 1280x720 --scale ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
+    console.log("Running fswebcam: ", command);
+    exec(command, (err, stdout, stderr) => {
+      if(err) {
+        console.error("Error doing fswebcam: ", err);
+        reject(err);
+      } else {
+        fs.readFile('./tmp/from-webcam.jpg', (err, data:Buffer) => {
+          if(err) {
+            console.error("Error reading from-webcam.jpg: ", err);
+            reject(err);
+          }
+          resolve(data);
+        });
+      }
+    })
+  })
+}
+
 function captureFromCurrentCamera():Promise<Buffer> {
   
   try {
@@ -49,6 +72,11 @@ function captureFromCurrentCamera():Promise<Buffer> {
     })
   } catch(e) {
     console.log("Failed to clean up photos directory: ", e);
+  }
+  try {
+    fs.mkdirSync('./tmp');
+  } catch(e) {
+    // hope it already exists...
   }
   
 
@@ -77,14 +105,8 @@ function captureFromCurrentCamera():Promise<Buffer> {
       return captureFromCurrentCamera();
     })
   } else if(webcamValid) {
-    return new Promise<Buffer>((resolve, reject) => {
-      Webcam.capture( "test_picture", ( err, data:string ) => {
-        if(err) {
-          reject(err);
-        } else {
-          resolve(Buffer.from(data, 'base64'));
-        }
-      });
+    return getFromFsWebcam().then((imageBuffer:Buffer) => {
+      return imageBuffer;
     }).catch((failure) => {
       console.log("failure from webcam attempt", failure);
       webcamValid = false;

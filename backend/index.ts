@@ -87,6 +87,7 @@ app.get('/reaction-count', (req:core.Request, res:core.Response) => {
 });
 
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
+  console.log("Someone is posting an image");
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
 
@@ -100,7 +101,6 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
     } else {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
-    console.log("loaded ", image.width + " x " + image.height + " image");
     if(image.height !== IMAGE_SUBMISSION_HEIGHT) {
       debugger; // hey developer, something messed up!
       throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
@@ -113,6 +113,7 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
 });
 
 app.post('/react', (req:core.Request, res:core.Response) => {
+  console.log("Someone is posting a reaction");
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ReactSubmission) => {
     let ip = req.headers['x-forwarded-for'] || req.ip; // x-forwarded-for is because on the server we're living behind a proxy

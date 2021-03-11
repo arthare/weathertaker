@@ -324,7 +324,6 @@ export default class Db {
             results.forEach((result) => {
               ret[result.reactionid] = result.total
             });
-            console.log("reaction countzz for video ", videoId, ":", ret);
             resolve(ret);
           }
         })
