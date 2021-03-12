@@ -58,6 +58,11 @@ function getFromFsWebcam():Promise<Buffer> {
             console.error("Error reading from-webcam.jpg: ", err);
             reject(err);
           }
+
+          try{
+            fs.unlink('./tmp/from-webcam.jpg', () => {})
+          } catch(e) {}
+
           resolve(data);
         });
       }
@@ -65,21 +70,27 @@ function getFromFsWebcam():Promise<Buffer> {
   })
 }
 
-function captureFromCurrentCamera():Promise<Buffer> {
-  
+function cleanupDir(dir) {
   try {
-    const photos = fs.readdirSync('./photos');
+    const photos = fs.readdirSync(dir);
     photos.forEach((photo) => {
-      fs.unlinkSync(`./photos/${photo}`);
+      fs.unlinkSync(`${dir}/${photo}`);
     })
   } catch(e) {
     console.log("Failed to clean up photos directory: ", e);
   }
+
+}
+
+function captureFromCurrentCamera():Promise<Buffer> {
+  
   try {
     fs.mkdirSync('./tmp');
   } catch(e) {
     // hope it already exists...
   }
+  cleanupDir('./photos');
+  cleanupDir('./tmp');
   
 
   if(raspiCameraValid) {

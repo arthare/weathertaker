@@ -189,8 +189,8 @@ export class ExposureSettings {
     const image = await ImageJs.load(imageBuffer);
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
-    const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
-    fs.writeFile(savePath, imageBuffer, () => {});
+    //const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
+    //fs.writeFile(savePath, imageBuffer, () => {});
     
     //console.log("saved to ", savePath);
     //image.save(savePath, {format: 'jpg'});
