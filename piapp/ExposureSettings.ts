@@ -69,12 +69,9 @@ export class ExposureSettings {
     // we need to figure out which camera we've got installed, which will affect our settings
     
     this.myCamera = ConnectedCamera.RaspiV2; // just assume v2
-    const v4l2 = spawnSync(`v4l2-ctl --list-framesizes=YU12`);
-    console.log("v4 output: ", v4l2.output.join('\n'));
-    const stdout = v4l2.stdout?.toString();
-    const stderr = v4l2.stderr?.toString();
+    const v4l2 = execSync(`v4l2-ctl --list-framesizes=YU12`);
+    const stdout = v4l2.toString();
     console.log("v4 stdout: ", stdout);
-    console.log("v4 stderr: ", stderr);
     if(stdout.includes('2592x1944')) {
       this.myCamera = ConnectedCamera.RaspiV1;
       this.MAX_EXPOSURE_US = 3999999;
