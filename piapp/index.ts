@@ -171,7 +171,9 @@ if(process.argv.find((arg) => arg === "test-images")) {
     }
 
     const rawImage:ImageJs = await takePicture();
+    console.log(elapsed(), "picture taken, doing processing");
     const processedImage = await ImageEffects.process(rawImage);
+    console.log(elapsed(), "processing complete, and produced a ", processedImage.byteLength, "-byte image");
     return processedImage;
   }
         
@@ -201,7 +203,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
       submitPromise = submitPromise.then(async () => {
         console.log(elapsed(), mySubmitCount, "About to encode base64 string from image");
         const base64 = data.toString('base64');
-        console.log(elapsed(), mySubmitCount, "Encoded base64 string from image");
+        console.log(elapsed(), mySubmitCount, `Encoded ${base64.length}-char base64 string from image`);
         const request:ImageSubmissionRequest = {
           apiKey: config.apiKey,
           imageBase64: base64

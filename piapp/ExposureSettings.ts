@@ -73,12 +73,15 @@ export class ExposureSettings {
     const stdout = v4l2.toString();
     console.log("v4 stdout: ", stdout);
     if(stdout.includes('2592x1944')) {
+      console.log("We're a raspi v1!");
       this.myCamera = ConnectedCamera.RaspiV1;
       this.MAX_EXPOSURE_US = 3999999;
     } else if(stdout.includes('3280x2464')) {
+      console.log("We're a raspi v2!");
       this.myCamera = ConnectedCamera.RaspiV2;
       this.MAX_EXPOSURE_US = 8000000; // make sure that you've got your raspistill fully updated if this doesn't work.
     } else if(stdout.includes('4056x3040')) {
+      console.log("We're a raspi HQ!");
       this.myCamera = ConnectedCamera.RaspiHQ;
       this.MAX_EXPOSURE_US = 230 * 1000000; // 230 seconds!  wow!
     }
