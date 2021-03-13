@@ -36,7 +36,7 @@ export class ImageEffects {
     ctx.putImageData(data, 0, 0);
     console.log(elapsed(), "leveled");
 
-    return canvas.toBuffer();
+    return canvas.toBuffer("image/jpeg", {quality: 90});
   }
 
   public static getMeanBrightness(peakHistoBrightness:number, image:ImageJs):{histo:number[][], mean:number} {
