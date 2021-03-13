@@ -3,24 +3,20 @@ import {Image as ImageJs} from 'image-js';
 import {dassert, elapsed} from './Utils';
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 import fs from 'fs';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, spawnSync } from 'child_process';
 import { rejects } from 'assert';
+import { ImageEffects } from './ImageEffects';
 
-// the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-const MAX_EXPOSURE_US = 3999980; // 10s, max exposure for the v2 camera
-const PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
-const MIN_EXPOSURE_US = 60; // 1/10000s
-
-const DEFAULT_ISO = 100;
-
-const ADJUST_RATE = 2.75;
-
-// these appear to be the actual capabilities of the camera
-const MAX_ISO = 800;
-const MIN_ISO = 100;
 
 function roundToShutterMultiple(us:number) {
   return (Math.floor(us / 20)*20)
+}
+
+enum ConnectedCamera {
+  RaspiV1, // note: not tested
+  RaspiV2,
+  Fswebcam,
+  RaspiHQ,
 }
 
 export class ExposureSettings {
@@ -28,6 +24,21 @@ export class ExposureSettings {
   currentIso = 100;
   imagesTaken = 0;
   lastWasExtreme = false;
+
+  myCamera:ConnectedCamera;
+
+  // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
+  MAX_EXPOSURE_US = 3999980; // 10s, max exposure for the v2 camera
+  PREFERRED_EXPOSURE_US = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
+  MIN_EXPOSURE_US = 60; // 1/10000s
+
+  DEFAULT_ISO = 100;
+
+  ADJUST_RATE = 2.75;
+
+  // these appear to be the actual capabilities of the camera
+  MAX_ISO = 800;
+  MIN_ISO = 100;
 
   constructor() {
     const currentHour = new Date().getHours() + (new Date().getMinutes()/60);
@@ -37,23 +48,41 @@ export class ExposureSettings {
 
     // minIsoEquivMaxExposure represents 2-second, 800-iso exposures as what they'd be as a ISO100 shot.  Then we're going to run checkExposureBounds to get everything back hunky-dory
     // so at midnight we should really be starting at 16-second iso100 equivalents, so startingUs is going to get calculated as that.  Then it'll be 8-second, ISO200, 4-second ISO400, and finally 2-second ISO800
-    const minIsoEquivMaxExposure = MAX_EXPOSURE_US * (MAX_ISO / MIN_ISO);
+    const minIsoEquivMaxExposure = this.MAX_EXPOSURE_US * (this.MAX_ISO / this.MIN_ISO);
 
 
     // this will give us startUs = (really long exposure) at midnight, (really short exposure) at noon.
-    const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*MIN_EXPOSURE_US;
+    const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*this.MIN_EXPOSURE_US;
 
 
-    this.currentUs = startingUs; // 100ms, 1/10 second
-    this.currentIso = MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
+    this.currentUs = startingUs;
     
-
-    // currentUs
-    for(var x = 0; x < (MAX_ISO / MIN_ISO); x++) {
+    // adjust ISOs and currentUs so that we get back under preferred exposure
+    for(var x = 0; x < (this.MAX_ISO / this.MIN_ISO); x++) {
       this.checkExposureBounds();
       console.log(`Starting exposure: ${(this.currentUs/1000).toFixed(2)}ms @ iso ${this.currentIso}`);
     }
     this.checkExposureBounds();
+
+    this.currentIso = this.MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
+    
+    // we need to figure out which camera we've got installed, which will affect our settings
+    
+    this.myCamera = ConnectedCamera.RaspiV2; // just assume v2
+    const v4l2 = spawnSync(`v4l2-ctl --list-framesizes=YU12`);
+    const stdout = v4l2.stdout.toString();
+    if(stdout.includes('2592x1944')) {
+      this.myCamera = ConnectedCamera.RaspiV1;
+      this.MAX_EXPOSURE_US = 3999999;
+    } else if(stdout.includes('3280x2464')) {
+      this.myCamera = ConnectedCamera.RaspiV2;
+      this.MAX_EXPOSURE_US = 8000000; // make sure that you've got your raspistill fully updated if this doesn't work.
+    } else if(stdout.includes('4056x3040')) {
+      this.myCamera = ConnectedCamera.RaspiHQ;
+      this.MAX_EXPOSURE_US = 230 * 1000000; // 230 seconds!  wow!
+    }
+
+
   }
 
   brighter(limitMultiply) {
@@ -64,14 +93,14 @@ export class ExposureSettings {
 
     // the current fix says: "if your currentUs is 49, it rounds to 40us.  In order to jump to 60us, you need to require a brightness increase sufficient to go from 40us to 51us (+25%), not just from 49us to 51us (+4%)"
     const tookUs = roundToShutterMultiple(this.currentUs);
-    this.currentUs = tookUs * Math.min(ADJUST_RATE, limitMultiply);
+    this.currentUs = tookUs * Math.min(this.ADJUST_RATE, limitMultiply);
 
     this.checkExposureBounds();
   }
   darker(limitMultiply) {
     // see comment in brighter();
     const tookUs = roundToShutterMultiple(this.currentUs);
-    this.currentUs = tookUs * Math.max(limitMultiply, (1 / ADJUST_RATE));
+    this.currentUs = tookUs * Math.max(limitMultiply, (1 / this.ADJUST_RATE));
     this.checkExposureBounds();
   }
   wayDarker(multiply) {
@@ -83,31 +112,31 @@ export class ExposureSettings {
     this.checkExposureBounds();
   }
   private checkExposureBounds() {
-    if(this.currentUs > PREFERRED_EXPOSURE_US) {
+    if(this.currentUs > this.PREFERRED_EXPOSURE_US) {
       // hmm, we're getting to a pretty long exposure here...
       // let's step up the ISO
-      if(this.currentIso < MAX_ISO) {
+      if(this.currentIso < this.MAX_ISO) {
         this.currentUs /= 2;
         this.currentIso *= 2;
       } else {
         // we're maxed out on ISO too?  We can keep running up to MAX_EXPOSURE_US I guess
-        if(this.currentUs >= MAX_EXPOSURE_US) {
-          this.currentUs = MAX_EXPOSURE_US;
-          this.currentIso = MAX_ISO;
+        if(this.currentUs >= this.MAX_EXPOSURE_US) {
+          this.currentUs = this.MAX_EXPOSURE_US;
+          this.currentIso = this.MAX_ISO;
         } else {
           // this is fine.  Stuff's going to get grainy, but we can support it.
         }
       }
-    } else if(this.currentUs < MIN_EXPOSURE_US) {
+    } else if(this.currentUs < this.MIN_EXPOSURE_US) {
       // below minimum exposure time.  Let's step down ISO
-      if(this.currentIso > MIN_ISO) {
+      if(this.currentIso > this.MIN_ISO) {
         // we still have some ISO room
         this.currentIso /= 2;
         this.currentUs *= 2;
       } else {
         // we're taking them as short and as insensitive as we can...
-        this.currentIso = MIN_ISO;
-        this.currentUs = MIN_EXPOSURE_US;
+        this.currentIso = this.MIN_ISO;
+        this.currentUs = this.MIN_EXPOSURE_US;
       }
     }
 
@@ -148,45 +177,7 @@ export class ExposureSettings {
     //raspiCamera.setOptions();
   }
 
-  private analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:number, nHisto:number, histos:number[][]):{low:number, mean:number, high:number} {
-    const comboHisto = [];
-    for(var x = 0;x < nHisto; x++) {comboHisto.push(0);}
-
-    let total = 0;
-    let sum = 0;
-    for(var channel = 0; channel < histos.length; channel++) {
-      for(var value = 0; value < histos[channel].length; value++) {
-        comboHisto[value] += histos[channel][value];
-        total += histos[channel][value];
-      }
-    }
-
-    let targets = [
-      (nthPercentileLow / 100)*total,
-      total / 2,
-      (nthPercentileHigh / 100)*total,
-    ];
-    let results = [];
-    let currentSum = 0;
-    for(var value = 0; value < comboHisto.length; value++) {
-      const thisAddition = comboHisto[value];
-      
-      targets.forEach((target, index) => {
-        if(target >= currentSum && target < (currentSum + thisAddition)) {
-          results[index] = value;
-        }
-      })
-      currentSum += thisAddition;
-    }
-    
-    dassert(currentSum === total);
-
-    return {low:results[0], mean:results[1], high:results[2]};
-  }
-
-  async analyzeAndLevelImage(imageBuffer:Buffer):Promise<Buffer> {
-
-    const image = await ImageJs.load(imageBuffer);
+  async analyzeRawImage(image:ImageJs) {
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
     //const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
@@ -196,52 +187,24 @@ export class ExposureSettings {
     //image.save(savePath, {format: 'jpg'});
 
     const peakHistoBrightness = 256;
-    const histo = (image as any).getHistograms({maxSlots: peakHistoBrightness, useAlpha: false});
-
-    const histoResult = this.analyzeHistogram(2.5, 97.5, peakHistoBrightness, histo);
-    console.log(elapsed(), "histoResult = ", histoResult);
-
-    let sum = 0;
-    let count = 0;
-    for(var color = 0; color < histo.length; color++) {
-      for(var val = 0; val < histo[color].length; val++) {
-        sum += val * histo[color][val];
-        count += histo[color][val];
-      }
-    }
-    const mean = sum / count;
+    const basicStats = ImageEffects.getMeanBrightness(peakHistoBrightness, image);
+    
+    const mean = basicStats.mean;
     const targetMean = peakHistoBrightness / 2;
     const multiplyToGetToTarget = targetMean / mean;
-    console.log(elapsed(), "mean brightness = ", mean.toFixed(1));
 
     if(mean >= peakHistoBrightness*0.97 && !this.lastWasExtreme) {
-
       this.wayDarker(0.05);
       this.lastWasExtreme = true;
     } else if(mean < peakHistoBrightness*0.03 && !this.lastWasExtreme) {
-
       this.wayBrighter(20);
       this.lastWasExtreme = true;
     } else if(mean < targetMean) {
-
       this.brighter(multiplyToGetToTarget);
       this.lastWasExtreme = false;
     } else if(mean > targetMean) {
-
       this.darker(multiplyToGetToTarget);
       this.lastWasExtreme = false;
     }
-    console.log(elapsed(), "brightened or darked");
-
-    //console.log(elapsed(), "about to multiply");
-    //(resizedImage as any).multiply(multiplyToGetToTarget);
-    //console.log(elapsed(), "multiplied");
-    
-    //console.log(elapsed(), "about to level");
-    //resizedImage.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
-    //console.log(elapsed(), "leveled");
-
-    this.imagesTaken++;
-    return imageBuffer;
   }
 }
