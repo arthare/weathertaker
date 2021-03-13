@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "canvas": "^2.7.0",
     "image-js": "^0.31.4",
     "node-fetch": "^2.6.1",
     "node-raspistill": "^1.0.3",

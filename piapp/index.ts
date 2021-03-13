@@ -32,7 +32,9 @@ if(process.argv.find((arg) => arg === "test-images")) {
       const buf = fs.readFileSync(file);
       const image = await ImageJs.load(buf);
       console.log("handling ", file);
-      const processed = await (lastPromise = ImageEffects.process(image));
+
+      let processed = await (lastPromise = ImageEffects.process(image, buf));
+      
       fs.writeFileSync(`${file}.proc.jpg`, processed);
     }
 
@@ -128,7 +130,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
     cleanupDir('./tmp');
     
 
-    async function takePicture():Promise<ImageJs> {
+    async function takePicture():Promise<{image: ImageJs, buffer:Buffer}> {
       if(raspiCameraValid) {
         return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
           piFailuresInRow = 0;
@@ -141,7 +143,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
             throw e;
           }
   
-          return image;
+          return {image, buffer:imageBuffer};
         }).catch((failure) => {
           // hmmm, I guess the raspi camera isn't here?
           //try from the webcam.
@@ -156,8 +158,8 @@ if(process.argv.find((arg) => arg === "test-images")) {
           return takePicture();
         })
       } else if(webcamValid) {
-        return getFromFsWebcam().then((imageBuffer:Buffer) => {
-          return ImageJs.load(imageBuffer);
+        return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
+          return {image: await ImageJs.load(imageBuffer), buffer:imageBuffer};
         }).catch((failure) => {
           console.log("failure from webcam attempt", failure);
           webcamValid = false;
@@ -170,9 +172,9 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
     }
 
-    const rawImage:ImageJs = await takePicture();
+    const {image, buffer} = await takePicture();
     console.log(elapsed(), "picture taken, doing processing");
-    const processedImage = await ImageEffects.process(rawImage);
+    const processedImage = await ImageEffects.process(image, buffer);
     console.log(elapsed(), "processing complete, and produced a ", processedImage.byteLength, "-byte image");
     return processedImage;
   }

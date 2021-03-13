@@ -1,31 +1,42 @@
 import {Image as ImageJs} from 'image-js';
 import { dassert, elapsed } from './Utils';
+import {Canvas, Image} from 'canvas';
 
 
 export class ImageEffects {
-  static async process(image:ImageJs):Promise<Buffer> {
+  static async process(_image:ImageJs, inBuffer:Buffer):Promise<Buffer> {
     
     const peakHistoBrightness = 256;
-    const basicStats = ImageEffects.getMeanBrightness(peakHistoBrightness, image);
-    const targetMean = peakHistoBrightness / 2;
-    const multiplyToGetToTarget = targetMean / basicStats.mean;
+    const basicStats = ImageEffects.getMeanBrightness(peakHistoBrightness, _image);
 
     const histoResult = ImageEffects.analyzeHistogram(2.5, 99.5, peakHistoBrightness, basicStats.histo);
     console.log(elapsed(), "histoResult = ", histoResult);
 
+
+    const image = await new Promise<any>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = `data:image/jpeg;base64,${inBuffer.toString('base64')}`;
+    })
+
+    const canvas = new Canvas(image.width, image.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+    
+
+    const data = ctx.getImageData(0,0,canvas.width, canvas.height);
+    const pixels = data.data;
+
     console.log(elapsed(), "about to level");
     const span = histoResult.high - histoResult.low;
-    image.data.forEach((byt, index) => {
-      image.data[index] = Math.floor(256 * (byt - histoResult.low) / (span));
+    pixels.forEach((byt, index) => {
+      pixels[index] = Math.floor(256 * (byt - histoResult.low) / (span));
     })
+    ctx.putImageData(data, 0, 0);
     console.log(elapsed(), "leveled");
 
-
-    const toBuffer = image.toBuffer({format: 'jpg'});
-    console.log(elapsed(), `encoded to ${toBuffer.byteLength}-byte buffer`);
-    const bufferFrom = Buffer.from(toBuffer);
-    console.log(elapsed(), "built into a buffer");
-    return bufferFrom;
+    return canvas.toBuffer();
   }
 
   public static getMeanBrightness(peakHistoBrightness:number, image:ImageJs):{histo:number[][], mean:number} {
