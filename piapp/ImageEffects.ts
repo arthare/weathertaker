@@ -21,7 +21,11 @@ export class ImageEffects {
     console.log(elapsed(), "leveled");
 
 
-    return Buffer.from(image.toBuffer({format:'jpg'}));
+    const toBuffer = image.toBuffer({format: 'jpg'});
+    console.log(elapsed(), `encoded to ${toBuffer.byteLength}-byte buffer`);
+    const bufferFrom = Buffer.from(toBuffer);
+    console.log(elapsed(), "built into a buffer");
+    return bufferFrom;
   }
 
   public static getMeanBrightness(peakHistoBrightness:number, image:ImageJs):{histo:number[][], mean:number} {
