@@ -84,6 +84,8 @@ export class ExposureSettings {
       console.log("We're a raspi HQ!");
       this.myCamera = ConnectedCamera.RaspiHQ;
       this.MAX_EXPOSURE_US = 230 * 1000000; // 230 seconds!  wow!
+    } else {
+      console.log("We can't identify our camera type from " + stdout);
     }
 
 
@@ -194,7 +196,7 @@ export class ExposureSettings {
     const basicStats = ImageEffects.getMeanBrightness(peakHistoBrightness, image);
     
     const mean = basicStats.mean;
-    const targetMean = peakHistoBrightness / 2;
+    const targetMean = peakHistoBrightness * 0.65
     const multiplyToGetToTarget = targetMean / mean;
 
     if(mean >= peakHistoBrightness*0.97 && !this.lastWasExtreme) {

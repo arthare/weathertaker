@@ -10,11 +10,14 @@ export class ImageEffects {
     const targetMean = peakHistoBrightness / 2;
     const multiplyToGetToTarget = targetMean / basicStats.mean;
 
-    const histoResult = ImageEffects.analyzeHistogram(15, 99.5, peakHistoBrightness, basicStats.histo);
+    const histoResult = ImageEffects.analyzeHistogram(2.5, 99.5, peakHistoBrightness, basicStats.histo);
     console.log(elapsed(), "histoResult = ", histoResult);
 
     console.log(elapsed(), "about to level");
-    image.level({channels: [0,1,2], min: histoResult.low, max:histoResult.high});
+    const span = histoResult.high - histoResult.low;
+    image.data.forEach((byt, index) => {
+      image.data[index] = Math.floor(256 * (byt - histoResult.low) / (span));
+    })
     console.log(elapsed(), "leveled");
 
 
@@ -60,12 +63,6 @@ export class ImageEffects {
       (nthPercentileHigh / 100)*total,
     ];
 
-    let cumes = [];
-    cumes[0] = comboHisto[0];
-    for(var value = 1; value < comboHisto.length; value++) {
-      cumes[value] = cumes[value-1] + comboHisto[value];
-    }
-    console.log("cumes = ", cumes);
     let results = [];
     let currentSum = 0;
     for(var value = 0; value < comboHisto.length; value++) {
