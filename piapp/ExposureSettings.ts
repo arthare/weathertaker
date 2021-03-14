@@ -200,6 +200,8 @@ export class ExposureSettings {
     const targetMean = peakHistoBrightness * 0.65
     const multiplyToGetToTarget = targetMean / mean;
 
+    console.log(elapsed(), "Mean brightness: ", mean, " target: ", targetMean);
+
     if(mean >= peakHistoBrightness*0.97 && !this.lastWasExtreme) {
       this.wayDarker(0.05);
       this.lastWasExtreme = true;
