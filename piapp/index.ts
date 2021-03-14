@@ -231,6 +231,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
             console.log(elapsed(), mySubmitCount, "posted successfully!");
             return response.json().then((response) => {
               g_currentModels = response?.models || {};
+              console.log("new model from web: ", response);
             })
           }
         }).catch((failure) => {

@@ -29,6 +29,7 @@ export class ImageEffects {
       }
     }
 
+    console.log("model for image: ", currentModels);
     // ok, we've got our image!  let's run it through the pipeline!
     const pipeline = [
       processApply,
