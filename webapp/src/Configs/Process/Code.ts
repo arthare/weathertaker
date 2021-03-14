@@ -52,10 +52,12 @@ export function apply(input:Canvas, models:any):Canvas {
 
   console.log(elapsed(), "about to level");
   const span = histoResult.high - histoResult.low;
-  pixels.forEach((byt, index) => {
-    pixels[index] = Math.floor(256 * (byt - histoResult.low) / (span));
-  })
-  ctx.putImageData(data, 0, 0);
+  if(span > 10) {
+    pixels.forEach((byt, index) => {
+      pixels[index] = Math.floor(256 * (byt - histoResult.low) / (span));
+    })
+    ctx.putImageData(data, 0, 0);
+  }
 
   return input;
 }
