@@ -227,7 +227,7 @@ export default class Db {
     const db = await getDb();
 
     return new Promise((resolve, reject) => {
-      db.execute(`select model from sources where sources.apikey=?`, [apiKey], (err, results:any[]) => {
+      db.execute(`select models from sources where sources.apikey=?`, [apiKey], (err, results:any[]) => {
         if(err) {
           reject(err);
         } else if(results.length === 1) {
