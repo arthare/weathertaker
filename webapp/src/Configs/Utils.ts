@@ -49,8 +49,12 @@ export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:numb
     const thisAddition = comboHisto[value];
     
     targets.forEach((target, index) => {
-      if(target >= currentSum && target < (currentSum + thisAddition)) {
-        results[index] = value;
+      const thisSum = currentSum;
+      const nextSum = currentSum + thisAddition;
+      if(target >= thisSum && target < nextSum) {
+        const pctTowardsNext = (target - thisSum) / (nextSum - thisSum);
+        dassert(pctTowardsNext >= 0 && pctTowardsNext <= 1.0)
+        results[index] = value + pctTowardsNext;
       }
     })
     currentSum += thisAddition;
