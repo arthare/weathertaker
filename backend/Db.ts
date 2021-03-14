@@ -242,8 +242,8 @@ export default class Db {
         } else {
           reject(new Error("Nothing found"));
         }
-      }).finally(() => db.end());
-    })
+      })
+    }).finally(() => db.end());
   }
   static async setCurrentModels(apiKey:string, newModel:any):Promise<any> {
 
