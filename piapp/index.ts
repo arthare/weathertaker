@@ -140,11 +140,11 @@ if(process.argv.find((arg) => arg === "test-images")) {
     cleanupDir('./tmp');
     
 
-    async function takePicture():Promise<{image: ImageJs, buffer:Buffer}> {
+    async function takePicture():Promise<Buffer> {
       if(raspiCameraValid) {
         return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
           piFailuresInRow = 0;
-          return {image, buffer:imageBuffer};
+          return imageBuffer;
         }).catch((failure) => {
           // hmmm, I guess the raspi camera isn't here?
           //try from the webcam.
@@ -160,7 +160,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
         })
       } else if(webcamValid) {
         return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
-          return {image: await ImageJs.load(imageBuffer), buffer:imageBuffer};
+          return imageBuffer;
         }).catch((failure) => {
           console.log("failure from webcam attempt", failure);
           webcamValid = false;
@@ -174,7 +174,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
     }
 
     
-    const {image, buffer} = await takePicture();
+    const buffer = await takePicture();
     console.log(elapsed(), "picture taken, doing processing");
     const canvas = await ImageEffects.prepareCanvasFromBuffer(buffer);
     console.log("canvas prepared");
