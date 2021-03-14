@@ -181,7 +181,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
     await expSettings.analyzeRawImage(canvas);
     const processedImage = await ImageEffects.process(canvas, g_currentModels);
-    const compressedImage = processedImage.toBuffer();
+    const compressedImage = processedImage.toBuffer("image/jpeg", {quality: 90});
     console.log(elapsed(), "processing complete, and produced a ", compressedImage.byteLength, "-byte image");
     return compressedImage;
   }
