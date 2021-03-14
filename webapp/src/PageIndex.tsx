@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './PageIndex.scss';
 import {Helmet} from 'react-helmet'
+import { useParams } from 'react-router-dom';
 
 let base = 'http://fastsky.ca/api/';
 let baseDebug = window.location.hostname === 'localhost' ? 'http://localhost:2702/' : base;
@@ -11,28 +12,75 @@ function refreshReactionCounts(id:number) {
 }
 const PageIndex = () => {
 
+  const params:{handle:string} = useParams<any>();
+  console.log("index props: ", params);
+
   const [videoUrl, setVideoUrl] = useState<string|undefined>(undefined);
   const [videoResponse, setVideoResponse] = useState<any>(undefined);
+  const [sourceResponse, setSourceResponse] = useState<any>(undefined);
   const [reactionCount, setReactionCount] = useState<any>(undefined);
   const [videoPlaying, setVideoPlaying] = useState<boolean>(false);
 
-  let videoMetaUrl = `${base}video`;
+  let videoMetaUrl = `${baseDebug}video`;
+  let sourceMetaUrl = `${baseDebug}source`;
+  let videoNextUrl = `${baseDebug}next-source`;
 
-  useEffect(() => {
-    fetch(videoMetaUrl).then((response) => response.json()).then((response) => {
-      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
-      setVideoResponse(response);
-    })
-  }, [videoMetaUrl]);
+  function doSizeCheck() {
+    console.log("doing size check");
+    const video:HTMLVideoElement|null = document.querySelector('.Index__Video');
+    if(video) {
 
-  const onVideoLoad = () => {
-    console.log("on video load");
-    const vid = document.querySelector('video');
-    if(vid) {
-      vid.play();
+      const isPortrait = window.innerWidth < window.innerHeight;
+
+      if(isPortrait) {
+        video.style.left = '0px';
+        video.style.top = '0px';
+        video.style.width = `100vh`;
+        video.style.height = `100vw`;
+      } else {
+        video.style.left = '0px';
+        video.style.top = '0px';
+        video.style.width = `100vw`;
+        video.style.height = `100vh`;
+      }
+    } else {
+      console.log("no video yet");
     }
   }
 
+  useEffect(() => {
+    // on startup, figure out sizing and make sure the video fits
+
+    doSizeCheck();
+
+    window.addEventListener('resize', () => doSizeCheck());
+    return function cleanup() {
+
+    }
+  }, []);
+
+  useEffect(() => {
+    fetch(`${videoMetaUrl}?sourceHandle=${params.handle || ''}`).then((response) => response.json()).then((response) => {
+
+      fetch(`${sourceMetaUrl}?id=${response.sourceId}`).then((r) => r.json()).then((source) => {
+        setSourceResponse(source);
+      })
+
+      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
+      setVideoResponse(response);
+    })
+  }, [videoMetaUrl, params.handle]);
+
+  const onVideoLoad = () => {
+    console.log("on video load");
+    doSizeCheck();
+
+    const vid:HTMLVideoElement|null = document.querySelector('video.Index__Video');
+    if(vid) {
+      doSizeCheck();
+      vid.play();
+    }
+  }
 
   useEffect(() => {
     // reaction counts
@@ -48,7 +96,7 @@ const PageIndex = () => {
     // progress animation
     let animReq:any;
     function paintFrame() { 
-      const vid = document.querySelector('video');
+      const vid:HTMLVideoElement|null = document.querySelector('video.Index__Video');
       const canvas:HTMLCanvasElement|null = document.querySelector('canvas.Index__Video-Progress-Canvas');
       const ctx = canvas?.getContext('2d');
       if(vid && canvas && ctx) {
@@ -114,32 +162,40 @@ const PageIndex = () => {
   }
 
   const onPlayPause = () => {
-    const vid = document.querySelector('video');
+    const vid:HTMLVideoElement|null = document.querySelector('video.Index__Video');
     if(videoPlaying && vid) {
+      doSizeCheck();
       vid.pause();
     } else if(!videoPlaying && vid) {
       vid.play();
     }
   }
   const onFaster = () => {
-    const vid = document.querySelector('video');
+    const vid:HTMLVideoElement|null = document.querySelector('video.Index__Video');
     if(vid) {
       if(videoPlaying) {
-        vid.playbackRate *= 1.25;
+        vid.currentTime += vid.duration / 12;
       } else {
         vid.currentTime += 1/30;
       }
     }
   }
   const onSlower = () => {
-    const vid = document.querySelector('video');
+    const vid:HTMLVideoElement|null = document.querySelector('video.Index__Video');
     if(vid) {
       if(videoPlaying) {
-        vid.playbackRate *= 0.8;
+        vid.currentTime -= vid.duration / 6;
       } else {
         vid.currentTime-= 1/30;
       }
     }
+  }
+
+  const onNext = () => {
+    fetch(`${videoNextUrl}?id=${sourceResponse.id}`).then((response) => response.json()).then((response) => {
+      // this tells us the next source info to go to
+      window.location.href = `/location/${response.handle}`;
+    })
   }
 
   return (
@@ -149,8 +205,6 @@ const PageIndex = () => {
         <script src="https://kit.fontawesome.com/d8b18df8ff.js" crossOrigin={"anonymous" as any}></script>
       </Helmet>
       {videoUrl && (<>
-        <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onAbort={onError} onError={onError}>
-        </video>
         <div className="Index__Video-Progress">
           <canvas className="Index__Video-Progress-Canvas"></canvas>
           <div className="Index__Video-Controls">
@@ -159,6 +213,20 @@ const PageIndex = () => {
             <i className="fas fa-forward Index__Video-Control" onClick={onFaster}></i>
           </div>
         </div>
+
+        {sourceResponse && (
+          <div className="Index__Video-Description">
+            <div className="Index__Video-Texts">
+              <div className="Index__Video-Title">{sourceResponse.name}</div>
+              <div className="Index__Video-Subtitle">{sourceResponse.description}</div>
+              <div className="Index__Video-Link"><a href={`/location/${sourceResponse.handle}`}>Link</a></div>
+            </div>
+            <div className="Index__Video-Skip">
+              <i className="fas fa-step-forward" onClick={onNext}></i>
+            </div>
+          </div>
+        )}
+
         <div className="Index__Video-Reactions">
           <i onClick={onDownloadVideo} className="fas fa-download Index__Video-Reaction">
             {reactionCount && (<div className="Index__Video-Reaction--Count">{reactionCount.download || '0'}</div>)}
@@ -170,6 +238,8 @@ const PageIndex = () => {
             {reactionCount && (<div className="Index__Video-Reaction--Count">{reactionCount.wow || '0'}</div>)}
           </i>
         </div>
+        <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); doSizeCheck(); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onAbort={onError} onError={onError}></video>
+        
         
       </>)}
     </div>

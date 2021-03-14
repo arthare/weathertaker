@@ -7,8 +7,9 @@ import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
 import { exec, execSync } from 'child_process';
-import { elapsed } from './Utils';
 import {ImageEffects} from './ImageEffects';
+import { elapsed } from '../webapp/src/Configs/Utils';
+import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 
 const raspiCamera = new Raspistill();
 
@@ -21,6 +22,16 @@ if(process.argv.find((arg) => arg === "test-images")) {
     const imgs = fs.readdirSync(root);
     let lastPromise:Promise<any> = Promise.resolve();
 
+    const modelToTest = {
+      LatLng: {
+        lat: 51.1985,
+        lng: -114.487,
+      } as LatLngModel,
+      CurrentTime: {
+        tm: new Date("2015-01-01T00:00:00-08:00"),
+      }
+    }
+
     for(var x = 0;x < imgs.length; x++) {
       await lastPromise;
       const img = imgs[x];
@@ -30,12 +41,11 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
       const file = `${root}/${img}`;
       const buf = fs.readFileSync(file);
-      const image = await ImageJs.load(buf);
-      console.log("handling ", file);
+      const canvas = await ImageEffects.prepareCanvasFromBuffer(buf);
 
-      let processed = await (lastPromise = ImageEffects.process(image, buf));
+      let processed = await (lastPromise = ImageEffects.process(canvas, modelToTest));
       
-      fs.writeFileSync(`${file}.proc.jpg`, processed);
+      fs.writeFileSync(`${file}.proc.jpg`, processed.toBuffer());
     }
 
     await lastPromise;
@@ -46,7 +56,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
 
 
-
+  let g_currentModels = {}; // the configured models from the database.  Gets updated on each image submission
 
   
   var webcamOpts = {
@@ -134,15 +144,6 @@ if(process.argv.find((arg) => arg === "test-images")) {
       if(raspiCameraValid) {
         return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
           piFailuresInRow = 0;
-          const image:ImageJs = await ImageJs.load(imageBuffer);
-          try {
-
-            await expSettings.analyzeRawImage(image);
-          } catch(e) {
-            console.log("error while analyzing image: ", e);
-            throw e;
-          }
-  
           return {image, buffer:imageBuffer};
         }).catch((failure) => {
           // hmmm, I guess the raspi camera isn't here?
@@ -172,11 +173,17 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
     }
 
+    
     const {image, buffer} = await takePicture();
     console.log(elapsed(), "picture taken, doing processing");
-    const processedImage = await ImageEffects.process(image, buffer);
-    console.log(elapsed(), "processing complete, and produced a ", processedImage.byteLength, "-byte image");
-    return processedImage;
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(buffer);
+    console.log("canvas prepared");
+
+    await expSettings.analyzeRawImage(canvas);
+    const processedImage = await ImageEffects.process(canvas, g_currentModels);
+    const compressedImage = processedImage.toBuffer();
+    console.log(elapsed(), "processing complete, and produced a ", compressedImage.byteLength, "-byte image");
+    return compressedImage;
   }
         
   let submitPromise = Promise.resolve();
@@ -222,7 +229,9 @@ if(process.argv.find((arg) => arg === "test-images")) {
             throw response;
           } else {
             console.log(elapsed(), mySubmitCount, "posted successfully!");
-            return response.json();
+            return response.json().then((response) => {
+              g_currentModels = response?.models || {};
+            })
           }
         }).catch((failure) => {
           // oh well...

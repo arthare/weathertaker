@@ -1,7 +1,7 @@
 import express from 'express';
 import * as core from 'express-serve-static-core';
 import {postStartup, setCorsHeaders, setUpCors} from './HttpUtils';
-import Db, { VideoInfo } from './Db';
+import Db, { SourceInfo, VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
@@ -33,12 +33,40 @@ function handleFailure(req:core.Request, res:core.Response) {
     res.end();
   }
 }
+app.get('/next-source', (req:core.Request, res:core.Response) => {
 
+  setCorsHeaders(req, res);
+  return Db.getNextSource(parseInt(req.query.id)).then(handleSuccess(req,res), handleFailure(req,res));
+
+});
+app.get('/source', (req:core.Request, res:core.Response) => {
+  // fetch the video metadata and send it to the browser, who can then decide what to do
+  setCorsHeaders(req, res);
+  return Db.getSourceInfo(req.query.id).then(handleSuccess(req,res), handleFailure(req,res));
+
+});
 app.get('/video', (req:core.Request, res:core.Response) => {
   // fetch the video metadata and send it to the browser, who can then decide what to do
   setCorsHeaders(req, res);
-  return Db.getVideo(req.query.id || null).then(handleSuccess(req,res), handleFailure(req,res));
+  if(req.query.sourceId) {
+    return Db.getMostRecentVideoOfSource(req.query.sourceId).then(handleSuccess(req,res), handleFailure(req,res));
+  } else if(req.query.sourceHandle) {
+    return Db.getMostRecentVideoOfSourceByHandle(req.query.sourceHandle).then(handleSuccess(req,res), handleFailure(req,res));
+  } else {
+    return Db.getVideo(req.query.id || null).then(handleSuccess(req,res), handleFailure(req,res));
+  }
 
+});
+app.post('/models', (req:core.Request, res:core.Response) => {
+  return postStartup(req, res).then(async (modelUpdate:any) => {
+    const currentModel = await Db.getCurrentModels(modelUpdate.apiKey);
+    for(var key in modelUpdate) {
+      if(key !== 'apiKey') {
+        currentModel[key] = modelUpdate[key];
+      }
+    }
+    return Db.setCurrentModels(modelUpdate.apiKey, currentModel);
+  }).then(handleSuccess(req,res), handleFailure(req,res));
 });
 
 console.log("about to create download-video");
@@ -70,6 +98,7 @@ app.get('/download-video', (req:core.Request, res:core.Response) => {
     res.end();
   }
 });
+
 
 app.get('/reaction-count', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
@@ -105,7 +134,12 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
       debugger; // hey developer, something messed up!
       throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
     }
-    return Db.imageSubmission(query);
+    return Db.imageSubmission(query).then(async (submit) => {
+      return {
+        submit,
+        models: await Db.getCurrentModels(query.apiKey),
+      }
+    });
   }).then(handleSuccess(req,res), (failure) => {
     console.log("image-submission failure: ", failure && failure.message);
     handleFailure(req,res)(failure);

@@ -1,11 +1,12 @@
 import {Raspistill} from 'node-raspistill';
 import {Image as ImageJs} from 'image-js';
-import {dassert, elapsed} from './Utils';
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 import fs from 'fs';
 import { exec, execSync, spawnSync } from 'child_process';
 import { rejects } from 'assert';
 import { ImageEffects } from './ImageEffects';
+import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
+import { Canvas } from 'canvas';
 
 
 function roundToShutterMultiple(us:number) {
@@ -183,7 +184,7 @@ export class ExposureSettings {
     //raspiCamera.setOptions();
   }
 
-  async analyzeRawImage(image:ImageJs) {
+  async analyzeRawImage(image:Canvas) {
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
     //const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
@@ -193,7 +194,7 @@ export class ExposureSettings {
     //image.save(savePath, {format: 'jpg'});
 
     const peakHistoBrightness = 256;
-    const basicStats = ImageEffects.getMeanBrightness(peakHistoBrightness, image);
+    const basicStats = getMeanBrightness(image);
     
     const mean = basicStats.mean;
     const targetMean = peakHistoBrightness * 0.65
