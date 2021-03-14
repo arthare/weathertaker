@@ -231,11 +231,12 @@ export default class Db {
         if(err) {
           reject(err);
         } else if(results.length === 1) {
+          console.log("tried to get model ", results);
           try {
-            resolve(JSON.parse(results[0].model));
+            resolve(JSON.parse(results[0].models));
           } catch(e) {
             // this is fine, just means it has no data yet
-            resolve({}); 
+            resolve({error: e.message}); 
           }
           
         } else {
