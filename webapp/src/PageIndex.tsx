@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import './PageIndex.scss';
 import {Helmet} from 'react-helmet'
 import { useParams } from 'react-router-dom';
+import Modal from './Modal';
+import { GetConfigResponse } from './Configs/Types';
+import ConfigModalContents from './ConfigModalContents';
 
 let base = 'http://fastsky.ca/api/';
 let baseDebug = window.location.hostname === 'localhost' ? 'http://localhost:2702/' : base;
@@ -20,10 +23,13 @@ const PageIndex = () => {
   const [sourceResponse, setSourceResponse] = useState<any>(undefined);
   const [reactionCount, setReactionCount] = useState<any>(undefined);
   const [videoPlaying, setVideoPlaying] = useState<boolean>(false);
+  const [showingConfig, setShowingConfig] = useState<boolean>(false);
+  const [configData, setConfigData] = useState<GetConfigResponse|null>(null);
 
   let videoMetaUrl = `${baseDebug}video`;
   let sourceMetaUrl = `${baseDebug}source`;
   let videoNextUrl = `${baseDebug}next-source`;
+  let configUrl = `${baseDebug}config`;
 
   function doSizeCheck() {
     console.log("doing size check");
@@ -190,6 +196,21 @@ const PageIndex = () => {
       }
     }
   }
+  const onConfig = () => {
+    const apiKey = prompt("Enter password", "");
+    if(typeof apiKey === 'string' && apiKey) {
+      return fetch(`${configUrl}?apiKey=${encodeURIComponent(apiKey)}`).then((response) => response.json()).then((config:GetConfigResponse) => {
+        setConfigData(config);
+        setShowingConfig(true);
+      }, (failure) => {
+        alert("Failed to retrieve configuration info");
+      })
+    }
+  }
+
+  const onCloseConfig = () => {
+    setShowingConfig(false);
+  }
 
   const onNext = () => {
     fetch(`${videoNextUrl}?id=${sourceResponse.id}`).then((response) => response.json()).then((response) => {
@@ -214,12 +235,19 @@ const PageIndex = () => {
           </div>
         </div>
 
+        <Modal showing={showingConfig} onClose={onCloseConfig}>
+          {configData && <ConfigModalContents config={configData} />}
+        </Modal>
+
         {sourceResponse && (
           <div className="Index__Video-Description">
             <div className="Index__Video-Texts">
               <div className="Index__Video-Title">{sourceResponse.name}</div>
               <div className="Index__Video-Subtitle">{sourceResponse.description}</div>
-              <div className="Index__Video-Link"><a href={`/location/${sourceResponse.handle}`}>Link</a></div>
+              <div className="Index__Video-Link">
+                <a href={`/location/${sourceResponse.handle}`}>Link</a>
+                <i className="fas fa-cogs" onClick={onConfig}></i>
+                </div>
             </div>
             <div className="Index__Video-Skip">
               <i className="fas fa-step-forward" onClick={onNext}></i>

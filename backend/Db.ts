@@ -7,9 +7,9 @@ import atob from 'atob';
 import {guaranteePath} from './FsUtils';
 import md5 from 'md5';
 import { notifyDirtySource } from './VideoMaker';
-import { ImageSubmissionRequest, ReactionType } from '../types/http';
 import { platform } from 'os';
 import { rejects } from 'assert';
+import { ImageSubmissionRequest, ReactionType, RecentRawFileRequest, RecentRawFileSubmissionRequest } from '../webapp/src/Configs/Types';
 
 const config = JSON.parse(fs.readFileSync('./db-config.json', 'utf8'));
 
@@ -220,6 +220,35 @@ export default class Db {
           }
         })
       }).finally(() => db.end());
+    })
+  }
+
+  static async updateRawFile(query:RecentRawFileSubmissionRequest):Promise<any> {
+    // the raw files allow us to do editing previews in the webapp
+
+    const source = await Db.validateApiKey(query.apiKey);
+    // let's save the file
+    const path = `./images/${source.handle}/raw-${query.when}.jpg`;
+    fs.writeFile(path, Buffer.from(query.imageBase64, 'base64'), (err) => {
+      if(err) {
+        throw (err);
+      } else {
+        // file saved!  since it's a fixed path only depending on noon or night for a given handle, we don't actually have to have this in the DB.
+      }
+    });
+  }
+  static async getRawFile(query:RecentRawFileRequest):Promise<Buffer> {
+    const source = await Db.getSourceInfo(query.sourceId);
+
+    const path = `./images/${source.handle}/raw-${query.when}.jpg`;
+    return new Promise((resolve, reject) => {
+      fs.readFile(path, (err, data:Buffer) => {
+        if(err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      })
     })
   }
 

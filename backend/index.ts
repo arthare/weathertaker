@@ -5,8 +5,8 @@ import Db, { SourceInfo, VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission} from '../types/http';
 import { resolveNaptr } from 'dns';
+import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
 
 
 let app = <core.Express>express();
@@ -100,6 +100,26 @@ app.get('/download-video', (req:core.Request, res:core.Response) => {
 });
 
 
+app.get('/config', async (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+
+  try {
+    const source = await Db.validateApiKey(req.query.apiKey);
+    const models = await Db.getCurrentModels(req.query.apiKey);
+    const noon = await Db.getRawFile({when: 'noon', sourceId: source.id});
+    const night = await Db.getRawFile({when: 'night', sourceId: source.id});
+
+    const ret:GetConfigResponse = {
+      models,
+      noonBase64: noon.toString('base64'),
+      nightBase64: night.toString('base64'),
+    }
+    handleSuccess(req,res)(ret);
+  } catch(e) {
+    handleFailure(req,res)(e);
+  }
+});
+
 app.get('/reaction-count', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   if(req.query.videoId) {
@@ -113,6 +133,20 @@ app.get('/reaction-count', (req:core.Request, res:core.Response) => {
     res.writeHead(404, 'not-found');
     res.end();
   }
+});
+
+app.post('/recent-raw-file-submission', (req:core.Request, res:core.Response) => {
+  console.log("someone is sending us a unmodified file");
+  setCorsHeaders(req, res);
+  return postStartup(req,res).then(async (query:RecentRawFileSubmissionRequest) => {
+    return Db.updateRawFile(query).then(handleSuccess(req,res), handleFailure(req,res));
+
+  });
+});
+app.get('/recent-raw-file', (req:core.Request, res:core.Response) => {
+  console.log("someone is requesting the raw files for source ", req.query);
+  setCorsHeaders(req, res);
+  return Db.updateRawFile(req.query).then(handleSuccess(req,res), handleFailure(req,res));
 });
 
 app.post('/image-submission', (req:core.Request, res:core.Response) => {

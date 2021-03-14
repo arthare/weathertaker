@@ -2,7 +2,6 @@ import fetch from 'node-fetch';
 import NodeWebcam from 'node-webcam';
 import { platform } from 'os';
 import fs from 'fs';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH} from '../types/http';
 import {Raspistill} from 'node-raspistill';
 import {ExposureSettings} from './ExposureSettings';
 import {Image as ImageJs} from 'image-js';
@@ -10,9 +9,10 @@ import { exec, execSync } from 'child_process';
 import {ImageEffects} from './ImageEffects';
 import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
 
 const raspiCamera = new Raspistill();
-
+let g_tmLastRawImage = new Date().getTime();
 const IMAGE_CADENCE = 20000;
 
 if(process.argv.find((arg) => arg === "test-images")) {
@@ -54,7 +54,14 @@ if(process.argv.find((arg) => arg === "test-images")) {
 } else {
 
 
+  function getApiUrl(api:string) {
+    let base = 'http://fastsky.ca/api';
+    if(platform() === 'win32') {
+      base = 'http://localhost:2702';
+    }
 
+    return `${base}/${api}`;
+  }
 
   let g_currentModels = {}; // the configured models from the database.  Gets updated on each image submission
 
@@ -124,59 +131,93 @@ if(process.argv.find((arg) => arg === "test-images")) {
         fs.unlinkSync(`${dir}/${photo}`);
       })
     } catch(e) {
-      console.log("Failed to clean up photos directory: ", e);
+      // this is fine.
     }
 
   }
 
-  async function captureFromCurrentCamera():Promise<Buffer> {
+  async function acquireRawImage():Promise<Buffer> {
+    if(raspiCameraValid) {
+      return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
+        piFailuresInRow = 0;
+        return imageBuffer;
+      }).catch((failure) => {
+        // hmmm, I guess the raspi camera isn't here?
+        //try from the webcam.
+        piFailuresInRow++;
+        if(piFailuresInRow > 5) {
+          console.log("5 pi camera failures in a row.  rebooting");
+          execSync("sudo reboot");
+          return;
+        }
+        console.error("Error from raspi camera: ", failure);
+        raspiCameraValid = false;
+        return acquireRawImage();
+      })
+    } else if(webcamValid) {
+      return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
+        return imageBuffer;
+      }).catch((failure) => {
+        console.log("failure from webcam attempt", failure);
+        webcamValid = false;
+        throw failure;
+      })
+    } else {
+      // well crap
+      return Promise.reject("No cameras are known to be working...");
+    }
+  }
+
+  async function checkSaveRawImage(rawBuffer:Buffer):Promise<any> {
+    // this checks to see if we've taken an exemplar of a "night" or "noon" image and if so, sends it to the web DB
+    const dtNow = new Date();
+    const dtLast = new Date(g_tmLastRawImage);
+    let when:"noon"|"night"|null = null;
+    if(dtNow.getHours() === 0 && dtLast.getHours() === 23) {
+      // we just took the midnight image!
+      when = 'night';
+    } else if(dtNow.getHours() === 12 && dtLast.getHours() === 11) {
+      // we just took the noon image!
+      when = 'noon';
+    }
+
+    if(when) {
+      // we took an image worth submitting
+      const req:RecentRawFileSubmissionRequest = {
+        apiKey: config.apiKey,
+        imageBase64: rawBuffer.toString('base64'),
+        when,
+      }
+      console.log(`Submitting the '${when}' example image`);
+      fetch(getApiUrl('recent-raw-file-submission'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req),
+      });
+    }
+
+    g_tmLastRawImage = dtNow.getTime();
+
+  }
+  async function captureAndProcessOneImage():Promise<Buffer> {
     
     try {
       fs.mkdirSync('./tmp');
+      fs.mkdirSync('./photos');
     } catch(e) {
       // hope it already exists...
     }
     cleanupDir('./photos');
     cleanupDir('./tmp');
     
-
-    async function takePicture():Promise<Buffer> {
-      if(raspiCameraValid) {
-        return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
-          piFailuresInRow = 0;
-          return imageBuffer;
-        }).catch((failure) => {
-          // hmmm, I guess the raspi camera isn't here?
-          //try from the webcam.
-          piFailuresInRow++;
-          if(piFailuresInRow > 5) {
-            console.log("5 pi camera failures in a row.  rebooting");
-            execSync("sudo reboot");
-            return;
-          }
-          console.error("Error from raspi camera: ", failure);
-          raspiCameraValid = false;
-          return takePicture();
-        })
-      } else if(webcamValid) {
-        return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
-          return imageBuffer;
-        }).catch((failure) => {
-          console.log("failure from webcam attempt", failure);
-          webcamValid = false;
-          throw failure;
-        })
-      } else {
-        // well crap
-        return Promise.reject("No cameras are known to be working...");
-      }
-
-    }
-
+    const rawBuffer = await acquireRawImage();
     
-    const buffer = await takePicture();
+    checkSaveRawImage(rawBuffer);
+    
     console.log(elapsed(), "picture taken, doing processing");
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(buffer);
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(rawBuffer);
     console.log("canvas prepared");
 
     await expSettings.analyzeRawImage(canvas);
@@ -190,22 +231,18 @@ if(process.argv.find((arg) => arg === "test-images")) {
   let submitCount = 0;
 
 
-  function takeOnePicture() {
+  function takePictureLoop() {
     let mySubmitCount = submitCount++;
 
     console.log(elapsed(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
     const tmStart = elapsed();
     const tmNext = tmStart + IMAGE_CADENCE;
-    return captureFromCurrentCamera().then(async (data:Buffer) => {
+    return captureAndProcessOneImage().then(async (data:Buffer) => {
       if(expSettings.lastWasExtreme) {
         return;
       }
-      console.log(elapsed(), mySubmitCount, "image captured");
-      let base = 'http://fastsky.ca/api';
-      if(platform() === 'win32') {
-        base = 'http://localhost:2702';
-      }
-      let url = `${base}/image-submission`;
+      console.log(elapsed(), mySubmitCount, "image captured and processed");
+      const url = getApiUrl('image-submission');
 
       
 
@@ -251,11 +288,12 @@ if(process.argv.find((arg) => arg === "test-images")) {
       // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
       const tmFinally = elapsed();
       const msUntil = Math.max(tmNext - tmFinally, 0);
+
       console.log(elapsed(), mySubmitCount, msUntil, "ms until we take the next picture ", tmNext, tmFinally);
-      setTimeout(takeOnePicture, msUntil);
+      setTimeout(takePictureLoop, msUntil);
     })
 
   }
-  takeOnePicture();
+  takePictureLoop();
 
 }
