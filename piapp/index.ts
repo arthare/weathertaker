@@ -9,7 +9,7 @@ import { exec, execSync } from 'child_process';
 import {ImageEffects} from './ImageEffects';
 import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types';
 
 const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
