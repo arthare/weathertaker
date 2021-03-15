@@ -8,4 +8,4 @@ npm install
 popd
 
 /opt/nodejs/bin/tsc
-pm2 restart pm2.json
+/opt/nodejs/bin/pm2 restart pm2.json
