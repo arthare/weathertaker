@@ -8,4 +8,4 @@ npm install
 popd
 
 /opt/nodejs/bin/tsc
-node ./dist/piapp/index.js
+pm2 restart pm2.json
