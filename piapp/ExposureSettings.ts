@@ -1,6 +1,5 @@
 import {Raspistill} from 'node-raspistill';
 import {Image as ImageJs} from 'image-js';
-import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from '../types/http';
 import fs from 'fs';
 import { exec, execSync, spawnSync } from 'child_process';
 import { rejects } from 'assert';

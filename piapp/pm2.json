@@ -1,7 +1,7 @@
 {
   "apps": [{
-      "name": "weathertaker_api",
-      "script": "api/index.js",
+      "name": "fastsky_imager",
+      "script": "dist/piapp/index.js",
       "args": "production",
       "restart_delay": 30000
   }]
