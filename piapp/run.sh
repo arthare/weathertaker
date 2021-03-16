@@ -9,3 +9,4 @@ popd
 
 /opt/nodejs/bin/tsc
 /opt/nodejs/bin/pm2 restart pm2.json
+
