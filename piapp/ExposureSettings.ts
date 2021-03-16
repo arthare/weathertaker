@@ -6,6 +6,7 @@ import { rejects } from 'assert';
 import { ImageEffects } from './ImageEffects';
 import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { Canvas } from 'canvas';
+import {feedWatchdog} from './Utils';
 
 
 function roundToShutterMultiple(us:number) {

@@ -11,6 +11,7 @@ import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import {CameraModel} from '../webapp/src/Configs/Camera/Model';
 import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
+import { feedWatchdog } from './Utils';
 
 const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
@@ -120,6 +121,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
               fs.unlink('./tmp/from-webcam.jpg', () => {})
             } catch(e) {}
 
+            feedWatchdog();
             resolve(data);
           });
         }
@@ -143,22 +145,16 @@ if(process.argv.find((arg) => arg === "test-images")) {
     if(raspiCameraValid) {
       return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
         piFailuresInRow = 0;
+        feedWatchdog();
         return imageBuffer;
       }).catch((failure) => {
-        // hmmm, I guess the raspi camera isn't here?
-        //try from the webcam.
-        piFailuresInRow++;
-        if(piFailuresInRow > 5) {
-          console.log("5 pi camera failures in a row.  rebooting");
-          execSync("sudo reboot");
-          return;
-        }
         console.error("Error from raspi camera: ", failure);
         raspiCameraValid = false;
         return acquireRawImage();
       })
     } else if(webcamValid) {
       return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
+        feedWatchdog();
         return imageBuffer;
       }).catch((failure) => {
         console.log("failure from webcam attempt", failure);
@@ -269,6 +265,7 @@ if(process.argv.find((arg) => arg === "test-images")) {
             throw response;
           } else {
             console.log(elapsed(), mySubmitCount, "posted successfully!");
+            feedWatchdog();
             return response.json().then((response) => {
               g_currentModels = response?.models || {};
               console.log("new model from web: ", response);
