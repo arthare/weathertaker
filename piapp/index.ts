@@ -9,7 +9,8 @@ import { exec, execSync } from 'child_process';
 import {ImageEffects} from './ImageEffects';
 import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types';
+import {CameraModel} from '../webapp/src/Configs/Camera/Model';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
 
 const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
@@ -97,10 +98,12 @@ if(process.argv.find((arg) => arg === "test-images")) {
 
   function getFromFsWebcam():Promise<Buffer> {
 
+    const cameraModel:CameraModel = g_currentModels['Camera'] || new CameraModel();
     return new Promise((resolve, reject) => {
+      console.log("fswebcam going to run with cameramodel ", cameraModel);
       const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
       const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
-      const command = `fswebcam --jpeg 95 -S 50 -F 1 -r 1280x720 --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
+      const command = `fswebcam --jpeg 95 -S 50 -F 1 -r ${cameraModel.desiredW}x${cameraModel.desiredH} --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
       console.log("Running fswebcam: ", command);
       exec(command, (err, stdout, stderr) => {
         if(err) {
@@ -269,6 +272,14 @@ if(process.argv.find((arg) => arg === "test-images")) {
             return response.json().then((response) => {
               g_currentModels = response?.models || {};
               console.log("new model from web: ", response);
+              
+              let cameraConfig:CameraModel = g_currentModels['Camera'];
+              if(!cameraConfig) {
+                g_currentModels['Camera'] = {
+                  desiredW: 1280,
+                  desiredH: 720,
+                }
+              }
             })
           }
         }).catch((failure) => {
