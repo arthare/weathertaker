@@ -6,6 +6,8 @@ export async function runWatchdog() {
   // why?  raspistill seems to have a nasty probability of locking up about once a day.  If the actual camera process locks up, 
   // this simple process can reboot the pi and we'll only miss a couple minutes of photos.
   try {
+    const stats = fs.lstatSync('./tmp/from-camera.jpg');
+    const statSignal = fs.lstatSync('./tmp/startup.txt');
     const tmStarted = statSignal.mtimeMs;
     const tmMod = stats.mtimeMs;
     const tmNow = new Date().getTime();
@@ -20,7 +22,7 @@ export async function runWatchdog() {
       execSync('sudo reboot');
     }
   } catch(e) {
-    // oh well
+
   } finally {
     setTimeout(runWatchdog, 30000);
   }
