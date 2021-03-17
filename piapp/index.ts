@@ -12,47 +12,17 @@ import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import {CameraModel} from '../webapp/src/Configs/Camera/Model';
 import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
 import { feedWatchdog } from './Utils';
+import {runTestImages} from './index-testImages';
+import {runWatchdog} from './index-watchdog';
 
 const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
 const IMAGE_CADENCE = 20000;
 
-if(process.argv.find((arg) => arg === "test-images")) {
-  async function testProc() {
-
-    const root = `./test-images`
-    const imgs = fs.readdirSync(root);
-    let lastPromise:Promise<any> = Promise.resolve();
-
-    const modelToTest = {
-      LatLng: {
-        lat: 51.1985,
-        lng: -114.487,
-      } as LatLngModel,
-      CurrentTime: {
-        tm: new Date("2015-01-01T00:00:00-08:00"),
-      }
-    }
-
-    for(var x = 0;x < imgs.length; x++) {
-      await lastPromise;
-      const img = imgs[x];
-      if(img.includes( '.proc.jpg')) {
-        continue;
-      }
-
-      const file = `${root}/${img}`;
-      const buf = fs.readFileSync(file);
-      const canvas = await ImageEffects.prepareCanvasFromBuffer(buf);
-
-      let processed = await (lastPromise = ImageEffects.process(canvas, modelToTest));
-      
-      fs.writeFileSync(`${file}.proc.jpg`, processed.toBuffer());
-    }
-
-    await lastPromise;
-  }
-  testProc();
+if(process.argv.find((arg) => arg === 'watchdog')) {
+  runWatchdog();
+} else if(process.argv.find((arg) => arg === "test-images")) {
+  runTestImages();
 } else {
 
 
@@ -104,21 +74,21 @@ if(process.argv.find((arg) => arg === "test-images")) {
       console.log("fswebcam going to run with cameramodel ", cameraModel);
       const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
       const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
-      const command = `fswebcam --jpeg 95 -S 50 -F 1 -r ${cameraModel.desiredW}x${cameraModel.desiredH} --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-webcam.jpg`;
+      const command = `fswebcam --jpeg 95 -S 50 -F 1 -r ${cameraModel.desiredW}x${cameraModel.desiredH} --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-camera.jpg`;
       console.log("Running fswebcam: ", command);
       exec(command, (err, stdout, stderr) => {
         if(err) {
           console.error("Error doing fswebcam: ", err);
           reject(err);
         } else {
-          fs.readFile('./tmp/from-webcam.jpg', (err, data:Buffer) => {
+          fs.readFile('./tmp/from-camera.jpg', (err, data:Buffer) => {
             if(err) {
-              console.error("Error reading from-webcam.jpg: ", err);
+              console.error("Error reading from-camera.jpg: ", err);
               reject(err);
             }
 
             try{
-              fs.unlink('./tmp/from-webcam.jpg', () => {})
+              fs.unlink('./tmp/from-camera.jpg', () => {})
             } catch(e) {}
 
             feedWatchdog();
