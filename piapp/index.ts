@@ -10,7 +10,7 @@ import {ImageEffects} from './ImageEffects';
 import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import {CameraModel} from '../webapp/src/Configs/Camera/Model';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/types';
+import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types';
 import { feedWatchdog } from './Utils';
 
 const raspiCamera = new Raspistill();
