@@ -23,7 +23,7 @@ try {
   fs.mkdirSync('./tmp');
   fs.writeFileSync("./tmp/startup.txt", "started!");
 } catch(e) {
-  
+
 }
 
 if(process.argv.find((arg) => arg === 'watchdog')) {
@@ -185,8 +185,6 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
     } catch(e) {
       // hope it already exists...
     }
-    cleanupDir('./photos');
-    cleanupDir('./tmp');
     
     const rawBuffer = await acquireRawImage();
     
