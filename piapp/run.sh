@@ -7,6 +7,7 @@ cd ../webapp
 npm install
 popd
 
+mkdir -p ./tmp
 echo "startup!" > ./tmp/startup.txt
 /opt/nodejs/bin/tsc
 echo "startup!" > ./tmp/startup.txt
