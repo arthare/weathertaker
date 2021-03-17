@@ -19,6 +19,13 @@ const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
 const IMAGE_CADENCE = 20000;
 
+try {
+  fs.mkdirSync('./tmp');
+  fs.writeFileSync("./tmp/startup.txt", "started!");
+} catch(e) {
+  
+}
+
 if(process.argv.find((arg) => arg === 'watchdog')) {
   runWatchdog();
 } else if(process.argv.find((arg) => arg === "test-images")) {
