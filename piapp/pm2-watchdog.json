@@ -1,0 +1,8 @@
+{
+  "apps": [{
+      "name": "fastsky_imager",
+      "script": "dist/piapp/index.js",
+      "args": "watchdog",
+      "restart_delay": 30000
+  }]
+}
