@@ -26,6 +26,7 @@ export class ExposureSettings {
   imagesTaken = 0;
   lastWasExtreme = false;
 
+  lastSettings:any = null;
   myCamera:ConnectedCamera;
 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
@@ -89,7 +90,22 @@ export class ExposureSettings {
       console.log("We can't identify our camera type from " + stdout);
     }
 
+    try {
+      const lastExposure:any = fs.readFileSync('./last-exposure.json', 'utf8');
+      const tmNow = new Date().getTime();
+      if(tmNow - lastExposure.tmNow < 10 * 60000) {
+        console.log("Been less than 10 minutes since our last exposure, so let's use this data ", lastExposure);
+        for(var key in lastExposure) {
+          if(typeof(lastExposure[key]) === 'number') {
+            this[key] = lastExposure[key];
+          }
+        }
 
+      }
+    } catch(e) {
+      // this is totally fine!
+    }
+    
   }
 
   brighter(limitMultiply) {
@@ -154,6 +170,15 @@ export class ExposureSettings {
     console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + this.currentIso + " ISO");
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
     console.log(elapsed(), "about to take picture");
+
+    let saveThis:any = {};
+    for(var key in this) {
+      if(typeof(this[key]) === 'number') {
+        saveThis[key] = this[key];
+      }
+    }
+    saveThis.tmNow = new Date().getTime();
+    fs.writeFileSync('./last-exposure.json', JSON.stringify(saveThis));
 
     return new Promise((resolve, reject) => {
       const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${this.currentIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;

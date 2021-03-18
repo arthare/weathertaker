@@ -10,6 +10,7 @@ popd
 mkdir -p ./tmp
 echo "startup!" > ./tmp/startup.txt
 /opt/nodejs/bin/tsc
+tsc
 echo "startup!" > ./tmp/startup.txt
 
 echo "starting main app pm2"
