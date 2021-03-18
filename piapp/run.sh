@@ -9,6 +9,7 @@ popd
 
 mkdir -p ./tmp
 echo "startup!" > ./tmp/startup.txt
+git pull origin master
 /opt/nodejs/bin/tsc
 tsc
 echo "startup!" > ./tmp/startup.txt
