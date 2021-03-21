@@ -3,7 +3,7 @@ import { exec, spawnSync } from "child_process";
 import { isBuffer } from "util";
 import { CameraModel } from "../webapp/src/Configs/Camera/Model";
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from "../webapp/src/Configs/Types";
-import { getMeanBrightness } from "../webapp/src/Configs/Utils";
+import { elapsed, getMeanBrightness } from "../webapp/src/Configs/Utils";
 import { CameraPlugin } from "./Plugin";
 import { GPhotoIsoChoice, GPhotoShutterSpeedChoice, GPhotoSpeeds, parseGPhoto2Isos, parseGPhoto2Speeds } from "./PluginGPhotoUtils";
 import { ExposureAdjustingCamera, readFromCamera } from "./PluginUtils";
@@ -49,9 +49,14 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
           const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
           const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
           
-          exec(`convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`);
-          console.log(elapsed(), "done writing to disk");
-          readFromCamera("./tmp/resized.jpg", resolve, reject);
+          exec(`convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`, (err, stdout, stderr) => {
+            if(err) {
+              reject(err);
+            } else {
+              console.log(elapsed(), "imagemagick resize complete");
+              readFromCamera("./tmp/resized.jpg", resolve, reject);
+            }
+          });
         }
       });
     })
