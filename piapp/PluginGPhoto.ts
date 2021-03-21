@@ -36,11 +36,13 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
     const settingIso:GPhotoIsoChoice = setting.iso;
     const settingSs:GPhotoShutterSpeedChoice = setting.ss;
 
-    console.log("GPhoto plugin using ss", settingSs, " and iso ", settingIso);
 
     const cameraCommand = `gphoto2 --set-config shutterspeed=${settingSs.ix} --set-config iso=${settingIso.iso} --no-keep --capture-image-and-download --filename=./tmp/from-camera.jpg`;
+    console.log("GPhoto plugin using ss", settingSs, " and iso ", settingIso);
+    console.log(cameraCommand);
     return new Promise<Buffer>((resolve, reject) => {
       exec(cameraCommand, (err, stdout, stderr) => {
+        console.log("camera command result ", err, stdout, stderr);
         if(err) {
           reject(err);
         } else {
@@ -50,8 +52,11 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
           const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
           const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
           
+          
+          const resizeCommand = `convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`;
           console.log("attempting to resize with imagemagick");
-          exec(`convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`, (err, stdout, stderr) => {
+          console.log(resizeCommand);
+          exec(resizeCommand, (err, stdout, stderr) => {
             console.log("resize result from imagemagick ", err, stdout, stderr);
             if(err) {
               reject(err);
