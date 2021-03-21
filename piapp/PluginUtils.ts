@@ -157,15 +157,15 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
 
 }
 
-export function readFromCamera(resolve:(buf:Buffer)=>void, reject:(err:any)=>void) {
-  fs.readFile('./tmp/from-camera.jpg', (err, data:Buffer) => {
+export function readFromCamera(file:string, resolve:(buf:Buffer)=>void, reject:(err:any)=>void) {
+  fs.readFile(file, (err, data:Buffer) => {
     if(err) {
       console.error("Error reading from-camera.jpg: ", err);
       reject(err);
     }
 
     try{
-      fs.unlink('./tmp/from-camera.jpg', () => {})
+      fs.unlink(file, () => {})
     } catch(e) {}
 
     resolve(data);

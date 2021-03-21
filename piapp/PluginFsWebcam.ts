@@ -19,7 +19,7 @@ export class FsWebcamPlugin implements CameraPlugin {
           console.error("Error doing fswebcam: ", err);
           reject(err);
         } else {
-          readFromCamera(resolve, reject);
+          readFromCamera("./tmp/from-camera.jpg", resolve, reject);
         }
       })
     })

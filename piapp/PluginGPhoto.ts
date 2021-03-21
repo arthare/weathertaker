@@ -2,6 +2,7 @@ import { Canvas } from "canvas";
 import { exec, spawnSync } from "child_process";
 import { isBuffer } from "util";
 import { CameraModel } from "../webapp/src/Configs/Camera/Model";
+import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from "../webapp/src/Configs/Types";
 import { getMeanBrightness } from "../webapp/src/Configs/Utils";
 import { CameraPlugin } from "./Plugin";
 import { GPhotoIsoChoice, GPhotoShutterSpeedChoice, GPhotoSpeeds, parseGPhoto2Isos, parseGPhoto2Speeds } from "./PluginGPhotoUtils";
@@ -44,7 +45,13 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
           reject(err);
         } else {
           // oh boy!  it worked!
-          readFromCamera(resolve, reject);
+
+          const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
+          const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
+          
+          exec(`convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`);
+          console.log(elapsed(), "done writing to disk");
+          readFromCamera("./tmp/resized.jpg", resolve, reject);
         }
       });
     })
@@ -52,7 +59,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
 
   protected getActualShutterSettingsFor(us: number, iso: number): {us: number; iso: number; internal: any;} {
     const targetIso100Equiv = us * iso / 100;
-    console.log("trying to find settings for ", us, iso);
+    console.log("trying to find settings for us/iso ", us, iso);
     let isoSetting = this._isos.find((myIso) => myIso.iso === iso) || this._isos[0];
 
 
@@ -63,14 +70,13 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
       const thisUs = speed.seconds * 1000000;
       const thisIso100Equiv = thisUs * iso / 100;
       const delta = Math.abs(thisIso100Equiv - targetIso100Equiv);
-      console.log("Target iso100 equiv ", targetIso100Equiv, " speed " + ixSpeed + " would give ", thisIso100Equiv, speed);
       if(delta < bestDelta) {
         bestDelta = delta;
         ixBest = ixSpeed;
       }
     })
 
-    return {
+    const ret = {
       us: this._speeds.choices[ixBest].seconds * 1000000,
       iso: iso,
       internal: {
@@ -78,6 +84,8 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
         iso: isoSetting,
       },
     }
+    console.log("Settings for us/iso ", us, iso, " = ", ret);
+    return ret;
   }
 
   static available():boolean {
