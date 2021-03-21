@@ -78,12 +78,14 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
 
   static available():boolean {
     const autoDetect = spawnSync(`gphoto2`, ['--auto-detect']);
-
+    if(autoDetect.error) {
+      return false;
+    }
     // this will give output like:
     //    Model                          Port
     //    ----------------------------------------------------------
     //    USB PTP Class Camera           usb:001,006
-    
+    console.log("result from gphoto2 --version ", autoDetect.stdout);
     const lines = autoDetect.stdout.split('\n');
     console.log("GPhoto2 results:\n" + lines.map((l) => "    " + l).join('\n'));
     if(lines.length >= 3 && lines[2].includes('usb:')) {

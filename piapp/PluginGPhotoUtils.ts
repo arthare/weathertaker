@@ -163,7 +163,7 @@ export function parseGPhoto2Isos(raw:string):GPhotoIsoChoice[] {
     }
   })
   ret = ret.filter((choice) => !!choice);
-  ret = ret.sort((a, b) => a.iso > b.iso ? -1 : 1);
+  ret = ret.sort((a, b) => a.iso > b.iso ? 1 : -1);
   return ret;
 }
 
@@ -171,7 +171,7 @@ function testParseGPhoto2Speeds() {
   const result = parseGPhoto2Speeds(sampleSpeeds);
   
   testAssert(result.choices.length === 52);
-  testAssert(result.slowestSelection === 0);
+  testAssert(result.slowestSelection === 1);
   testAssert(result.fastestSelection === 52);
   testAssert(result.deltaForFaster === 1);
 
@@ -181,9 +181,9 @@ testParseGPhoto2Speeds();
 function testParseGPhoto2IsoSpeeds() {
   const results = parseGPhoto2Isos(sampleIsos);
   
-  testAssert(results.length === 8);
+  testAssert(results.length === 7);
   testAssert(results[0].iso === 100);
-  testAssert(results[7].iso === 6400);
+  testAssert(results[6].iso === 6400);
   
 
 }
