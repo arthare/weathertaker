@@ -3,6 +3,7 @@ import fs from 'fs';
 import { CameraModel } from '../webapp/src/Configs/Camera/Model';
 import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { CameraPlugin } from './Plugin';
+import { testAssert } from './Utils';
 
 export abstract class ExposureAdjustingCamera implements CameraPlugin {
   private _currentUs;
@@ -30,6 +31,11 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
   }
 
   protected initExposureControl(preferredExposureUs:number, minExposureUs:number, maxExposureUs:number, minIso:number, maxIso:number) {
+    testAssert(minExposureUs < maxExposureUs);
+    testAssert(minIso < maxIso);
+    testAssert(preferredExposureUs >= minExposureUs && preferredExposureUs <= maxExposureUs);
+
+
     this.MIN_EXPOSURE_US = minExposureUs;
     this.MAX_EXPOSURE_US = maxExposureUs;
 

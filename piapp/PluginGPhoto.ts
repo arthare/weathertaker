@@ -25,9 +25,11 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
 
     console.log("Gphoto2 plugin configured with speeds ", this._speeds, " and isos ", this._isos);
 
+    this.initExposureControl(1000*1000, this._speeds.choices[this._speeds.choices.length-1].seconds*1000000, this._speeds.choices[0].seconds*1000000, this._isos[0].iso, this._isos[this._isos.length-1].iso);
+
   }
   takePhotoExposureControlled(targetUs:number, targetIso:number, cameraModel: CameraModel): Promise<Buffer> {
-    
+    console.log("takephoto exposure controlled ")
     const setting = this.getActualShutterSettingsFor(targetUs, targetIso).internal;
 
     const settingIso:GPhotoIsoChoice = setting.iso;
