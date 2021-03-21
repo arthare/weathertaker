@@ -23,6 +23,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
     const rawIso = spawnSync('gphoto2', ['--get-config=iso']);
     this._isos = parseGPhoto2Isos(rawIso.stdout.toString());
 
+    console.log("Gphoto2 plugin configured with speeds ", this._speeds, " and isos ", this._isos);
 
   }
   takePhotoExposureControlled(targetUs:number, targetIso:number, cameraModel: CameraModel): Promise<Buffer> {

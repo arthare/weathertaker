@@ -104,6 +104,8 @@ function choiceLinesToSplits(choiceLines:string[]):{ix:number, valueRaw:string}[
 export function parseGPhoto2Speeds(raw:string) {
   const lines = raw.split('\n');
   
+  console.log("lines for gphoto setup: ", lines);
+
   const choiceLines = lines.filter((line) => line.startsWith('Choice:'));
   const choicesRaw = choiceLinesToSplits(choiceLines);
   let choices:GPhotoShutterSpeedChoice[] = choicesRaw.map((choice) => {
@@ -176,7 +178,7 @@ function testParseGPhoto2Speeds() {
   testAssert(result.deltaForFaster === 1);
 
 }
-testParseGPhoto2Speeds();
+//testParseGPhoto2Speeds();
 
 function testParseGPhoto2IsoSpeeds() {
   const results = parseGPhoto2Isos(sampleIsos);
@@ -187,4 +189,4 @@ function testParseGPhoto2IsoSpeeds() {
   
 
 }
-testParseGPhoto2IsoSpeeds();
+//testParseGPhoto2IsoSpeeds();
