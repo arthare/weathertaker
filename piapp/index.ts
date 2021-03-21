@@ -3,7 +3,7 @@ import NodeWebcam from 'node-webcam';
 import { platform } from 'os';
 import fs from 'fs';
 import {Raspistill} from 'node-raspistill';
-import {ExposureSettings} from './ExposureSettings';
+import {RaspiStill} from './PluginRaspiStill';
 import {Image as ImageJs} from 'image-js';
 import { exec, execSync } from 'child_process';
 import {ImageEffects} from './ImageEffects';
@@ -11,12 +11,11 @@ import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import {CameraModel} from '../webapp/src/Configs/Camera/Model';
 import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types';
-import { feedWatchdog } from './Utils';
 import {runTestImages} from './index-testImages';
 import {runWatchdog} from './index-watchdog';
-import {GPhoto} from './GPhoto';
+import {prepareCameraPlugins} from './PluginFactory';
+import { CameraPlugin } from './Plugin';
 
-const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
 const IMAGE_CADENCE = 20000;
 
@@ -33,6 +32,9 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   runTestImages();
 } else {
 
+  let ixCurrentPlugin = 0;
+  let cameraPlugins:CameraPlugin[] = prepareCameraPlugins();
+
 
   function getApiUrl(api:string) {
     let base = 'http://fastsky.ca/api';
@@ -43,23 +45,12 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
     return `${base}/${api}`;
   }
 
-  let g_currentModels = {}; // the configured models from the database.  Gets updated on each image submission
-
-  
-  var webcamOpts = {
-    width: IMAGE_SUBMISSION_WIDTH,
-    height: IMAGE_SUBMISSION_HEIGHT,
-    quality: 90,
-    frames: 1,
-    skip: 100,
-    delay: 0,
-    output: "jpeg",
-    callbackReturn: "base64",
-    verbose: true
-  };
-  var Webcam = NodeWebcam.create( webcamOpts );
-
-
+  let g_currentModels = {
+    Camera: {
+      desiredW: 1280,
+      desiredH: 720,
+    }
+  }; // the configured models from the database.  Gets updated on each image submission
 
   let config:any;
   try {  
@@ -69,82 +60,23 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
     process.exit(1);
   }
 
-  const expSettings:ExposureSettings = new ExposureSettings();
+  let photoAttemptsSinceLastSuccess = 0;
 
-  let raspiCameraValid = true;
-  let webcamValid = true;
-  let piFailuresInRow = 0;
+  async function acquireRawImage():Promise<{image:Buffer, exposer:CameraPlugin}> {
 
-  let cameraPlugins = [new ExposureSettings(), new GPhoto()];
-
-  function getFromFsWebcam():Promise<Buffer> {
-
-    const cameraModel:CameraModel = g_currentModels['Camera'] || new CameraModel();
-    return new Promise((resolve, reject) => {
-      console.log("fswebcam going to run with cameramodel ", cameraModel);
-      const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
-      const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
-      const command = `fswebcam --jpeg 95 -S 50 -F 1 -r ${cameraModel.desiredW}x${cameraModel.desiredH} --scale ${w}x${IMAGE_SUBMISSION_HEIGHT} ./tmp/from-camera.jpg`;
-      console.log("Running fswebcam: ", command);
-      exec(command, (err, stdout, stderr) => {
-        if(err) {
-          console.error("Error doing fswebcam: ", err);
-          reject(err);
-        } else {
-          fs.readFile('./tmp/from-camera.jpg', (err, data:Buffer) => {
-            if(err) {
-              console.error("Error reading from-camera.jpg: ", err);
-              reject(err);
-            }
-
-            try{
-              fs.unlink('./tmp/from-camera.jpg', () => {})
-            } catch(e) {}
-
-            feedWatchdog();
-            resolve(data);
-          });
-        }
-      })
-    })
-  }
-
-  function cleanupDir(dir) {
     try {
-      const photos = fs.readdirSync(dir);
-      photos.forEach((photo) => {
-        fs.unlinkSync(`${dir}/${photo}`);
-      })
+      const buffer = await cameraPlugins[ixCurrentPlugin].takePhoto(g_currentModels['Camera']);
+      photoAttemptsSinceLastSuccess = 0;
+      return {image: buffer, exposer: cameraPlugins[ixCurrentPlugin]};
     } catch(e) {
-      // this is fine.
+      // hmm, I guess we can try the next plugin
+      ixCurrentPlugin++;
+      if(ixCurrentPlugin > cameraPlugins.length) {
+        ixCurrentPlugin = 0;
+      }
+      return acquireRawImage();
     }
-
-  }
-
-  async function acquireRawImage():Promise<Buffer> {
-    if(raspiCameraValid) {
-      return expSettings.takePhoto().then(async (imageBuffer:Buffer) => {
-        piFailuresInRow = 0;
-        feedWatchdog();
-        return imageBuffer;
-      }).catch((failure) => {
-        console.error("Error from raspi camera: ", failure);
-        raspiCameraValid = false;
-        return acquireRawImage();
-      })
-    } else if(webcamValid) {
-      return getFromFsWebcam().then(async (imageBuffer:Buffer) => {
-        feedWatchdog();
-        return imageBuffer;
-      }).catch((failure) => {
-        console.log("failure from webcam attempt", failure);
-        webcamValid = false;
-        throw failure;
-      })
-    } else {
-      // well crap
-      return Promise.reject("No cameras are known to be working...");
-    }
+    
   }
 
   async function checkSaveRawImage(rawBuffer:Buffer):Promise<any> {
@@ -189,15 +121,15 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
       // hope it already exists...
     }
     
-    const rawBuffer = await acquireRawImage();
+    const exposure = await acquireRawImage();
     
-    checkSaveRawImage(rawBuffer);
+    checkSaveRawImage(exposure.image);
     
     console.log(elapsed(), "picture taken, doing processing");
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(rawBuffer);
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image);
     console.log("canvas prepared");
 
-    await expSettings.analyzeRawImage(canvas);
+    await exposure.exposer.analyzeRawImage(canvas);
     const processedImage = await ImageEffects.process(canvas, g_currentModels);
     const compressedImage = processedImage.toBuffer("image/jpeg", {quality: 90});
     console.log(elapsed(), "processing complete, and produced a ", compressedImage.byteLength, "-byte image");
@@ -211,13 +143,11 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   function takePictureLoop() {
     let mySubmitCount = submitCount++;
 
-    console.log(elapsed(), mySubmitCount, "commanding to take one picture", raspiCameraValid, webcamValid);
+    console.log(elapsed(), mySubmitCount, "commanding to take one picture", ixCurrentPlugin);
     const tmStart = elapsed();
     const tmNext = tmStart + IMAGE_CADENCE;
     return captureAndProcessOneImage().then(async (data:Buffer) => {
-      if(expSettings.lastWasExtreme) {
-        return;
-      }
+      
       console.log(elapsed(), mySubmitCount, "image captured and processed");
       const url = getApiUrl('image-submission');
 
@@ -243,7 +173,6 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
             throw response;
           } else {
             console.log(elapsed(), mySubmitCount, "posted successfully!");
-            feedWatchdog();
             return response.json().then((response) => {
               g_currentModels = response?.models || {};
               console.log("new model from web: ", response);
@@ -267,8 +196,6 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
       console.error("Failure to capture: ", failure);
 
       // uh, if everything messed up, let's just try both cameras again and hope...
-      raspiCameraValid = true;
-      webcamValid = true;
     }).finally(() => {
 
       // we want to take images on a IMAGE_CADENCE-second period.  We've probably used up a bunch of those seconds, so let's figure out how long to sleep.
