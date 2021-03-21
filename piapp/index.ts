@@ -14,6 +14,7 @@ import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH,
 import { feedWatchdog } from './Utils';
 import {runTestImages} from './index-testImages';
 import {runWatchdog} from './index-watchdog';
+import {GPhoto} from './GPhoto';
 
 const raspiCamera = new Raspistill();
 let g_tmLastRawImage = new Date().getTime();
@@ -73,6 +74,8 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   let raspiCameraValid = true;
   let webcamValid = true;
   let piFailuresInRow = 0;
+
+  let cameraPlugins = [new ExposureSettings(), new GPhoto()];
 
   function getFromFsWebcam():Promise<Buffer> {
 

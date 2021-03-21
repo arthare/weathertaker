@@ -7,6 +7,7 @@ import { ImageEffects } from './ImageEffects';
 import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { Canvas } from 'canvas';
 import {feedWatchdog} from './Utils';
+import {PhotoPlugin} from './Plugin';
 
 
 function roundToShutterMultiple(us:number) {
@@ -20,7 +21,7 @@ enum ConnectedCamera {
   RaspiHQ,
 }
 
-export class ExposureSettings {
+export class ExposureSettings implements PhotoPlugin {
   currentUs = 100000;
   currentIso = 100;
   imagesTaken = 0;
@@ -209,7 +210,7 @@ export class ExposureSettings {
     //raspiCamera.setOptions();
   }
 
-  async analyzeRawImage(image:Canvas) {
+  async analyzeRawImage(image:Canvas):Promise<void> {
     console.log(elapsed(), "image straight outta camera was ", image.width, " x ", image.height);
 
     //const savePath = `./tmp/test-${this.imagesTaken}-${(this.currentUs/1000).toFixed(0)}ms.jpg`;
