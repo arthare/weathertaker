@@ -50,7 +50,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
 
   protected getActualShutterSettingsFor(us: number, iso: number): {us: number; iso: number; internal: any;} {
     const targetIso100Equiv = us * iso / 100;
-
+    console.log("trying to find settings for ", us, iso);
     let isoSetting = this._isos.find((myIso) => myIso.iso === iso) || this._isos[0];
 
 
@@ -61,6 +61,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
       const thisUs = speed.seconds * 1000000;
       const thisIso100Equiv = thisUs * iso / 100;
       const delta = Math.abs(thisIso100Equiv - targetIso100Equiv);
+      console.log("Target iso100 equiv ", targetIso100Equiv, " speed " + ixSpeed + " would give ", thisIso100Equiv, speed);
       if(delta < bestDelta) {
         bestDelta = delta;
         ixBest = ixSpeed;
