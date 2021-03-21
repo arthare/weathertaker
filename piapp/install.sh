@@ -1,3 +1,9 @@
+echo "Installing imagemagick"
+sudo apt-get update
+sudo apt-get install imagemagick -y
+
+echo "Installing gphoto2"
+sudo apt-get install gphoto2
 
 echo "Installing node-canvas dependencies"
 sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev -y

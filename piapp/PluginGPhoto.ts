@@ -45,11 +45,14 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
           reject(err);
         } else {
           // oh boy!  it worked!
+          console.log("gphoto command worked: ", stdout);
 
           const desiredAspect = IMAGE_SUBMISSION_WIDTH / IMAGE_SUBMISSION_HEIGHT;
           const w = Math.floor(IMAGE_SUBMISSION_HEIGHT * desiredAspect);
           
+          console.log("attempting to resize with imagemagick");
           exec(`convert ./tmp/from-camera.jpg -resize ${w}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/resized.jpg`, (err, stdout, stderr) => {
+            console.log("resize result from imagemagick ", err, stdout, stderr);
             if(err) {
               reject(err);
             } else {
