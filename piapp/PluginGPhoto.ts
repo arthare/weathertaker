@@ -18,10 +18,10 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
     super();
     // we need to make sure we've got a camera and figure out min/max shutterspeeds on it
     const rawSs = spawnSync('gphoto2', ['--get-config=shutterspeed']);
-    this._speeds = parseGPhoto2Speeds(rawSs.stdout);
+    this._speeds = parseGPhoto2Speeds(rawSs.stdout.toString());
     
     const rawIso = spawnSync('gphoto2', ['--get-config=iso']);
-    this._isos = parseGPhoto2Isos(rawIso.stdout);
+    this._isos = parseGPhoto2Isos(rawIso.stdout.toString());
 
 
   }
@@ -86,7 +86,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
     //    ----------------------------------------------------------
     //    USB PTP Class Camera           usb:001,006
     console.log("result from gphoto2 --version ", autoDetect.stdout);
-    const lines = autoDetect.stdout.split('\n');
+    const lines = autoDetect.stdout.toString().split('\n');
     console.log("GPhoto2 results:\n" + lines.map((l) => "    " + l).join('\n'));
     if(lines.length >= 3 && lines[2].includes('usb:')) {
       return true;
