@@ -37,7 +37,7 @@ export class GPhotoPlugin extends ExposureAdjustingCamera implements CameraPlugi
     const settingSs:GPhotoShutterSpeedChoice = setting.ss;
 
 
-    const cameraCommand = `gphoto2 --set-config shutterspeed=${settingSs.ix} --set-config iso=${settingIso.iso} --no-keep --capture-image-and-download --filename=./tmp/from-camera.jpg`;
+    const cameraCommand = `gphoto2 --set-config shutterspeed=${settingSs.ix} --set-config iso=${settingIso.ix} --no-keep --capture-image-and-download --filename=./tmp/from-camera.jpg`;
     console.log("GPhoto plugin using ss", settingSs, " and iso ", settingIso);
     console.log(cameraCommand);
     return new Promise<Buffer>((resolve, reject) => {
