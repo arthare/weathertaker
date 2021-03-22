@@ -82,7 +82,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
   }
 
   static available() {
-    const ret = spawnSync('raspistill', ['--version']);
+    const ret = spawnSync('raspistill', []);
     return ret.status === 0;
   }
 
