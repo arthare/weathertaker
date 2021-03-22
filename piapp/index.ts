@@ -74,7 +74,7 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
       if(ixCurrentPlugin > cameraPlugins.length) {
         ixCurrentPlugin = 0;
       }
-      return acquireRawImage();
+      throw e;
     }
     
   }
