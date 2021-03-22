@@ -83,7 +83,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
 
   static available() {
     const ret = spawnSync('raspistill', []);
-    return ret.status === 0;
+    return !ret.error;
   }
 
   protected getActualShutterSettingsFor(us: number, iso: number): { us: number; iso: number; internal: any; } {
