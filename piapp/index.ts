@@ -64,6 +64,7 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
 
   async function acquireRawImage():Promise<{image:Buffer, exposer:CameraPlugin}> {
 
+    console.log("acquiring image from plugin ", ixCurrentPlugin, " of ", cameraPlugins.length);
     try {
       const buffer = await cameraPlugins[ixCurrentPlugin].takePhoto(g_currentModels['Camera']);
       photoAttemptsSinceLastSuccess = 0;
