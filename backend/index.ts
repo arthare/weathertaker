@@ -1,7 +1,7 @@
 import express from 'express';
 import * as core from 'express-serve-static-core';
 import {postStartup, setCorsHeaders, setUpCors} from './HttpUtils';
-import Db, { SourceInfo, VideoInfo } from './Db';
+import Db, { ImageInfo, SourceInfo, VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
@@ -99,6 +99,20 @@ app.get('/download-video', (req:core.Request, res:core.Response) => {
   }
 });
 
+
+app.get('/last-image', async (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+
+  const image:ImageInfo = await Db.getLastImageFromSource(req.query.sourceId);
+  
+  if(fs.existsSync(image.filename)) {
+    console.log("transferring video with res.download");
+    res.download(image.filename);
+  } else {
+    handleFailure(req,res)(new Error("Image doesn't actually exist"));
+  }
+  
+});
 
 app.get('/config', async (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);

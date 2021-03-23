@@ -252,6 +252,28 @@ export default class Db {
     })
   }
 
+  static async getLastImageFromSource(sourceId:number|string):Promise<ImageInfo> {
+    const db = await getDb();
+
+    return new Promise((resolve, reject) => {
+      db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 1', [sourceId], (err, results:any[]) => {
+        if(err) {
+          reject(err);
+        } else if(results.length === 1) {
+          resolve(results.map((res) => {
+            return {
+              filename: res.filename,
+              tmTaken: res.unixtime*1000,
+              id: res.id,
+            }
+          })[0]);
+        } else {
+          throw new Error("Could not find image");
+        }
+      })
+    })
+  }
+
   static async getCurrentModels(apiKey:string):Promise<any> {
     const db = await getDb();
 

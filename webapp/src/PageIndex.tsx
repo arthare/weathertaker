@@ -13,6 +13,20 @@ function refreshReactionCounts(id:number) {
   const reactionCountUrl = `${baseDebug}reaction-count?videoId=${id}`;
   return fetch(reactionCountUrl).then((response) => response.json());
 }
+function readBlob(b:Blob):Promise<string> {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+
+    reader.onloadend = function() {
+      resolve(reader.result as string);
+    };
+
+    // TODO: hook up reject to reader.onerror somehow and try it
+
+    reader.readAsDataURL(b);
+  });
+}
+
 const PageIndex = () => {
 
   const params:{handle:string} = useParams<any>();
@@ -25,11 +39,13 @@ const PageIndex = () => {
   const [videoPlaying, setVideoPlaying] = useState<boolean>(false);
   const [showingConfig, setShowingConfig] = useState<boolean>(false);
   const [configData, setConfigData] = useState<GetConfigResponse|null>(null);
+  const [lastImageDataUri, setLastImageDataUri] = useState<string>('');
 
   let videoMetaUrl = `${baseDebug}video`;
   let sourceMetaUrl = `${baseDebug}source`;
   let videoNextUrl = `${baseDebug}next-source`;
   let configUrl = `${baseDebug}config`;
+  let lastImageUrl = `${base}last-image`;
 
   function doSizeCheck() {
     console.log("doing size check");
@@ -213,9 +229,25 @@ const PageIndex = () => {
   }
 
   const onNext = () => {
-    fetch(`${videoNextUrl}?id=${sourceResponse.id}`).then((response) => response.json()).then((response) => {
+    const url = `${videoNextUrl}?id=${sourceResponse.id}`;
+    console.log("trying to grab ", url);
+    fetch(url).then((response) => response.json()).then((response) => {
       // this tells us the next source info to go to
       window.location.href = `/location/${response.handle}`;
+    })
+  }
+
+  const onGetLastImage = () => {
+    const url = `${lastImageUrl}?sourceId=${sourceResponse.id}`;
+    console.log("trying to grab ", url);
+    fetch(url).then((result) => {
+      return result.blob();
+    }).then((blob) => {
+      return readBlob(blob)
+    }).then((dataUri:string) => {
+      setLastImageDataUri(dataUri);
+    }).catch(() => {
+      setLastImageDataUri('');
     })
   }
 
@@ -247,6 +279,7 @@ const PageIndex = () => {
               <div className="Index__Video-Link">
                 <a href={`/location/${sourceResponse.handle}`}>Link</a>
                 <i className="fas fa-cogs" onClick={onConfig}></i>
+                <i className="fas fa-image" onClick={onGetLastImage}></i>
                 </div>
             </div>
             <div className="Index__Video-Skip">
@@ -267,6 +300,12 @@ const PageIndex = () => {
           </i>
         </div>
         <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); doSizeCheck(); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onAbort={onError} onError={onError}></video>
+        {lastImageDataUri && (
+          <div className="Index__Video-LastImageModal">
+            <img className="Index__Video-LastImage" src={lastImageDataUri}></img>
+            <button className="Index__Video-LastImageModal--Button" onClick={() => setLastImageDataUri('')}>Close</button>
+          </div>
+        )}
         
         
       </>)}
