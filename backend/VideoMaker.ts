@@ -20,7 +20,7 @@ function makeVideo(imageIds:number[]) {
 let g_staleCount:{[key:string]:number} = {}; // mapping from source handles to whether they are stale or not
 
 export function markSourceStale(sourceId:number) {
-  g_staleCount[sourceId] = Math.max(g_staleCount[sourceId], 1);
+  g_staleCount[sourceId] = Math.max(g_staleCount[sourceId] || 0, 1);
 }
 
 async function cleanupOldVideos() {
@@ -202,7 +202,7 @@ async function checkForWork() {
 
 export function notifyDirtySource(sourceId:number) {
   console.log(`marked ${sourceId} as dirty`);
-  g_staleCount[sourceId] = 1;
+  g_staleCount[sourceId] = Math.max(1, g_staleCount[sourceId] || 0);
 }
 
 export function initVideoMaker() {
