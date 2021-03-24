@@ -26,6 +26,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
 
   lastSettings:any = null;
   myCamera:ConnectedCamera;
+  myMode = 4;
 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
   private _maxExposureUs = 3999980; // 10s, max exposure for the v2 camera
@@ -56,7 +57,8 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     } else if(stdout.includes('4056x3040')) {
       console.log("We're a raspi HQ!");
       this.myCamera = ConnectedCamera.RaspiHQ;
-      this._maxExposureUs = 230 * 1000000; // 230 seconds!  wow!
+      this._maxExposureUs = 45 * 1000000; // 230 seconds!  wow!
+      this.myMode = 3; // empirical testing seems to indicate the HQ only wants to stretch to the really long exposures when in mode 3
     } else {
       console.log("We can't identify our camera type from " + stdout);
     }
@@ -110,7 +112,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     fs.writeFileSync('./last-exposure.json', JSON.stringify(saveThis));
 
     return new Promise((resolve, reject) => {
-      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
+      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md ${this.myMode} -n -o ./tmp/from-camera.jpg`;
       console.log("running camera command ", cameraCommand);
       exec(cameraCommand, (err, stdout, stderr) => {
         if(err) {
