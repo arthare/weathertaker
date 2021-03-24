@@ -31,7 +31,7 @@ export class FsWebcamPlugin implements CameraPlugin {
 
   static available() {
     const ret = spawnSync('fswebcam', ['--version']);
-    return ret.status === 0;
+    return !ret.error;
   }
 
 }
