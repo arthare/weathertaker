@@ -94,10 +94,10 @@ function makeCanvas(w:number,h:number):Canvas {
 }
 
 export class ImageEffects {
-  static async prepareCanvasFromBuffer(inBuffer:Buffer):Promise<Canvas> {
+  static async prepareCanvasFromBuffer(inBuffer:Buffer, fnMakeImage:()=>any):Promise<Canvas> {
 
     const image = await new Promise<any>((resolve, reject) => {
-      const image = new Image();
+      const image = fnMakeImage();
       image.onload = () => resolve(image);
       image.onerror = reject;
       image.src = `data:image/jpeg;base64,${inBuffer.toString('base64')}`;

@@ -2,7 +2,7 @@ import './Modal.scss';
 import React, { useEffect, useState } from 'react';
 import { GetConfigResponse } from './Configs/Types';
 import './ConfigModalContents.scss';
-import { ImageEffects } from '../webapp/src/Configs/Utils';
+import { ImageEffects } from './Configs/Utils';
 
 const ConfigModalContents = (props:{config:GetConfigResponse}) => {
 
@@ -30,7 +30,7 @@ const ConfigModalContents = (props:{config:GetConfigResponse}) => {
   useEffect(() => {
     // the model changed, so we need to redo the edited images
     async function doIt(srcBase64:string, fnDone:(dataUri:string)=>void, pctDay:number) {
-      const image = await ImageEffects.prepareCanvasFromBuffer(Buffer.from(srcBase64, 'base64'));
+      const image = await ImageEffects.prepareCanvasFromBuffer(Buffer.from(srcBase64, 'base64'), () => document.createElement('img'));
       const canvas = document.createElement('canvas');
 
       const localModel = JSON.parse(JSON.stringify(model));

@@ -15,6 +15,7 @@ import {runTestImages} from './index-testImages';
 import {runWatchdog} from './index-watchdog';
 import {prepareCameraPlugins} from './PluginFactory';
 import { CameraPlugin } from './Plugin';
+import {Image} from 'canvas';
 
 let g_tmLastRawImage = new Date().getTime();
 const IMAGE_CADENCE = 20000;
@@ -127,7 +128,7 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
     checkSaveRawImage(exposure.image);
     
     console.log(elapsed(), "picture taken, doing processing");
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image);
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image());
     console.log("canvas prepared");
 
     await exposure.exposer.analyzeRawImage(canvas);
