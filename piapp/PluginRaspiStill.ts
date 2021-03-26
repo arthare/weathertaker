@@ -3,7 +3,7 @@ import {Image as ImageJs} from 'image-js';
 import fs from 'fs';
 import { exec, execSync, spawnSync } from 'child_process';
 import { rejects } from 'assert';
-import { ImageEffects } from './ImageEffects';
+import { ImageEffects } from '../webapp/src/Configs/Utils';
 import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { Canvas } from 'canvas';
 import {CameraPlugin} from './Plugin';

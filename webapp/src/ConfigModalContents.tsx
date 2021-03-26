@@ -2,7 +2,7 @@ import './Modal.scss';
 import React, { useEffect, useState } from 'react';
 import { GetConfigResponse } from './Configs/Types';
 import './ConfigModalContents.scss';
-import { ImageEffects } from './Configs/Utils';
+import { ImageEffects } from '../webapp/src/Configs/Utils';
 
 const ConfigModalContents = (props:{config:GetConfigResponse}) => {
 

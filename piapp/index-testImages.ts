@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import { ImageEffects } from './ImageEffects';
+import { ImageEffects } from '../webapp/src/Configs/Utils';
 
 export async function runTestImages() {
 
