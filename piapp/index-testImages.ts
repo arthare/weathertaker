@@ -15,6 +15,7 @@ export async function runTestImages() {
     } as LatLngModel,
     CurrentTime: {
       tm: new Date("2015-01-01T00:00:00-08:00"),
+      pctDay: 1.0,
     }
   }
 

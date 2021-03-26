@@ -1,4 +1,6 @@
 import { Canvas } from "canvas";
+import {apply as processApply} from './Process/Code';
+import SunCalc from 'suncalc'
 
 export function getHistogram(canvas:Canvas):number[] {
   const ctx = canvas.getContext('2d');
@@ -78,4 +80,76 @@ export function elapsed():number {
     msStart = tmNow;
   }
   return (tmNow - msStart);
+}
+
+function makeCanvas(w:number,h:number):Canvas {
+  if(typeof document !== 'undefined' && document.createElement) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c as any;
+  } else {
+    return new Canvas(w,h);
+  }
+}
+
+export class ImageEffects {
+  static async prepareCanvasFromBuffer(inBuffer:Buffer):Promise<Canvas> {
+
+    const image = await new Promise<any>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = `data:image/jpeg;base64,${inBuffer.toString('base64')}`;
+    })
+
+    const canvas = makeCanvas(image.width, image.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0);
+
+    return canvas;
+  }
+  static async process(canvas:Canvas, currentModels:any):Promise<Canvas> {
+
+    
+    if(!currentModels['CurrentTime']) {
+      debugger;
+
+      const tm = new Date().getTime();
+
+      let pctDay = 1.0;
+      if(currentModels['LatLng']) {
+        const latLng = currentModels['LatLng'];
+        const currentDate = new Date(tm);
+        const pos = SunCalc.getPosition(currentDate, latLng.lat, latLng.lng);
+        const angleDegrees = pos.altitude * 180 / Math.PI;
+        const fullDay = 10;
+        const fullNight = -10;
+        pctDay = (angleDegrees - fullNight) / (fullDay - fullNight);
+        pctDay = Math.max(0.0, pctDay);
+        pctDay = Math.min(1.0, pctDay);
+        console.log(`Processing: Because we have latlng ${latLng.lat.toFixed(2)}, ${latLng.lng.toFixed(2)} and sun angle ${angleDegrees.toFixed(1)} deg, we are ${(pctDay*100).toFixed(0)}% daytime`);
+      }
+      
+      currentModels['CurrentTime'] = {
+        tm: new Date().getTime(),
+        pctDay,
+      }
+    }
+
+    console.log("model for image: ", currentModels);
+    // ok, we've got our image!  let's run it through the pipeline!
+    const pipeline = [
+      processApply,
+    ]
+
+    pipeline.forEach((pipe, index) => {
+      console.log(elapsed(), "Applying pipeline ", index, " / ", pipeline.length);
+      pipe(canvas, currentModels);
+    })
+
+    return canvas;
+  }
+
+
 }
