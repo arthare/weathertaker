@@ -6,7 +6,7 @@ import {Raspistill} from 'node-raspistill';
 import {RaspiStill} from './PluginRaspiStill';
 import {Image as ImageJs} from 'image-js';
 import { exec, execSync } from 'child_process';
-import {ImageEffects} from './ImageEffects';
+import { ImageEffects } from '../webapp/src/Configs/Utils';
 import { elapsed } from '../webapp/src/Configs/Utils';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import {CameraModel} from '../webapp/src/Configs/Camera/Model';

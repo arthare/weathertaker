@@ -45,7 +45,7 @@ const PageIndex = () => {
   let videoMetaUrl = `${baseDebug}video`;
   let sourceMetaUrl = `${baseDebug}source`;
   let videoNextUrl = `${baseDebug}next-source`;
-  let configUrl = `${baseDebug}config`;
+  let configUrl = `${base}config`;
   let lastImageUrl = `${base}last-image`;
 
   function doSizeCheck() {
