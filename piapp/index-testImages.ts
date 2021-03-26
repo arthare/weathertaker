@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import { ImageEffects } from '../webapp/src/Configs/Utils';
+import {Image} from 'canvas';
 
 export async function runTestImages() {
 
@@ -28,7 +29,7 @@ export async function runTestImages() {
 
     const file = `${root}/${img}`;
     const buf = fs.readFileSync(file);
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(buf);
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
 
     let processed = await (lastPromise = ImageEffects.process(canvas, modelToTest));
     
