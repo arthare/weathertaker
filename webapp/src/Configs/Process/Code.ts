@@ -4,6 +4,12 @@ import { analyzeHistogram, elapsed, getMeanBrightness } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
 
+function testAssert(f:any) {
+  if(!f) {
+    debugger;
+  }
+}
+
 export function apply(input:Canvas, models:any):Canvas {
 
   const ctx = input.getContext('2d');
@@ -54,7 +60,18 @@ export function apply(input:Canvas, models:any):Canvas {
   const span = histoResult.high - histoResult.low;
   if(span > 10) {
     pixels.forEach((byt, index) => {
-      pixels[index] = Math.floor(256 * (byt - histoResult.low) / (span));
+      let val = pixels[index];
+      if(val < histoResult.mean) {
+        const pct = Math.max(0, (val - histoResult.low) / (histoResult.mean - histoResult.low));
+        testAssert(pct >= 0 && pct <= 1.0);
+        val = pct * 128;
+      } else {
+        const pct = Math.min(1, (val-histoResult.mean) / (histoResult.high-histoResult.mean));
+        testAssert(pct >= 0 && pct <= 1.0);
+        val = 128 + pct*128;
+      }
+
+      pixels[index] = Math.floor(val);
     })
     ctx.putImageData(data, 0, 0);
   }

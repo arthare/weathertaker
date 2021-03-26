@@ -40,6 +40,7 @@ const PageIndex = () => {
   const [showingConfig, setShowingConfig] = useState<boolean>(false);
   const [configData, setConfigData] = useState<GetConfigResponse|null>(null);
   const [lastImageDataUri, setLastImageDataUri] = useState<string>('');
+  const [reloads, setReloads] = useState<number>(0);
 
   let videoMetaUrl = `${baseDebug}video`;
   let sourceMetaUrl = `${baseDebug}source`;
@@ -75,9 +76,10 @@ const PageIndex = () => {
 
     doSizeCheck();
 
-    window.addEventListener('resize', () => doSizeCheck());
+    const onResize = () => doSizeCheck()
+    window.addEventListener('resize',onResize);
     return function cleanup() {
-
+      window.removeEventListener('resize', onResize);
     }
   }, []);
 
@@ -88,10 +90,16 @@ const PageIndex = () => {
         setSourceResponse(source);
       })
 
-      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
+      const newVideoUrl = `http://fastsky.ca/videos/${response.handle}/${response.filename}`;
+      console.log("new video url = ", newVideoUrl);
+      setVideoUrl(newVideoUrl);
       setVideoResponse(response);
+      setTimeout(() => {
+        console.log("reloading reloads ", reloads);
+        setReloads(reloads + 1);
+      }, 5 * 60000);
     })
-  }, [videoMetaUrl, params.handle]);
+  }, [reloads, params.handle]);
 
   const onVideoLoad = () => {
     console.log("on video load");

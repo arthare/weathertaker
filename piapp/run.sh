@@ -22,3 +22,4 @@ echo "starting watchdog app pm2"
 /opt/nodejs/bin/pm2 restart pm2-watchdog.json
 pm2 restart pm2-watchdog.json
 
+pm2 save
