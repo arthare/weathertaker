@@ -2,4 +2,5 @@
 
 export interface CurrentTimeModel {
   tm:number;
+  sunAngle:number;
 }

@@ -118,8 +118,8 @@ app.get('/config', async (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
 
   try {
-    const source = await Db.validateApiKey(req.query.apiKey);
-    const models = await Db.getCurrentModels(req.query.apiKey);
+    const source = await Db.getSourceInfo(req.query.sourceId);
+    const models = await Db.getCurrentModels(req.query.sourceId);
     const noon = await Db.getRawFile({when: 'noon', sourceId: source.id});
     const night = await Db.getRawFile({when: 'night', sourceId: source.id});
 
@@ -183,9 +183,10 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
       throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
     }
     return Db.imageSubmission(query).then(async (submit) => {
+      const source = await Db.validateApiKey(query.apiKey);
       return {
         submit,
-        models: await Db.getCurrentModels(query.apiKey),
+        models: await Db.getCurrentModels(source.id),
       }
     });
   }).then(handleSuccess(req,res), (failure) => {

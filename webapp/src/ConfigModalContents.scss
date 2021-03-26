@@ -8,9 +8,14 @@
     flex: 1 1 auto;
     font-family: monospace;
   }
+  &__Images-After {
+    flex: 0 0 25vh;
+    height: 25vh;
+    text-align: center;
+  }
   &__Images {
-    flex: 0 0 30vh;
-    height: 30vh;
+    flex: 0 0 25vh;
+    height: 25vh;
     text-align: center;
 
 

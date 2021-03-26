@@ -274,11 +274,11 @@ export default class Db {
     })
   }
 
-  static async getCurrentModels(apiKey:string):Promise<any> {
+  static async getCurrentModels(sourceId:number):Promise<any> {
     const db = await getDb();
 
     return new Promise((resolve, reject) => {
-      db.execute(`select models from sources where sources.apikey=?`, [apiKey], (err, results:any[]) => {
+      db.execute(`select models from sources where sources.id=?`, [sourceId], (err, results:any[]) => {
         if(err) {
           reject(err);
         } else if(results.length === 1) {

@@ -14,37 +14,37 @@ export function apply(input:Canvas, models:any):Canvas {
 
   const ctx = input.getContext('2d');
 
-  let myModel:ProcessModel|null = models['Process'];
-  if(!myModel) {
-    myModel = {
-      day: {
-        dropPctDark: 2.5,
-        dropPctLight: 97.5,
-      },
-      night: {
-        dropPctDark: 10.0,
-        dropPctLight: 90,
-      }
+  let myModel:ProcessModel = models['Process'] || {};
+
+  const defaultModel:ProcessModel = {
+    day: {
+      dropPctDark: 2.5,
+      dropPctLight: 99.9,
+      middle: 32,
+    },
+    night: {
+      dropPctDark: 10.0,
+      dropPctLight: 90,
+      middle: 128,
+    },
+  }
+
+  for(var key in defaultModel) {
+    if(!(myModel as any)[key]) {
+      (myModel as any)[key] = (defaultModel as any)[key] as any;
     }
   }
 
-  const currentDate = new Date(models['CurrentTime'].tm);
 
   const finalModel = myModel.day;
   const latLng:LatLngModel|null = models['LatLng'];
   if(latLng) {
-    console.log("we have lat/lng data!  so we should be able to apply day/night variation in the model!");
-    const pos = SunCalc.getPosition(currentDate, latLng.lat, latLng.lng);
-    const angleDegrees = pos.altitude * 180 / Math.PI;
-    const fullDay = 10;
-    const fullNight = -10;
-    let pctDay = (angleDegrees - fullNight) / (fullDay - fullNight);
-    pctDay = Math.max(0.0, pctDay);
-    pctDay = Math.min(1.0, pctDay);
-
-    console.log(`Processing: Because we have latlng ${latLng.lat.toFixed(2)}, ${latLng.lng.toFixed(2)} and sun angle ${angleDegrees.toFixed(1)} deg, we are ${(pctDay*100).toFixed(0)}% daytime`);
+    let pctDay = models['CurrentTime'].pctDay;
+    
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
+    finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
+    console.log("processing with pctDay = ", pctDay, finalModel.middle, finalModel.dropPctDark, finalModel.dropPctLight);
   }
 
   const peakHistoBrightness = 256;
@@ -60,15 +60,15 @@ export function apply(input:Canvas, models:any):Canvas {
   const span = histoResult.high - histoResult.low;
   if(span > 10) {
     pixels.forEach((byt, index) => {
-      let val = pixels[index];
+      let val = byt;
       if(val < histoResult.mean) {
         const pct = Math.max(0, (val - histoResult.low) / (histoResult.mean - histoResult.low));
         testAssert(pct >= 0 && pct <= 1.0);
-        val = pct * 128;
+        val = pct * finalModel.middle;
       } else {
         const pct = Math.min(1, (val-histoResult.mean) / (histoResult.high-histoResult.mean));
         testAssert(pct >= 0 && pct <= 1.0);
-        val = 128 + pct*128;
+        val = finalModel.middle + pct*(256-finalModel.middle);
       }
 
       pixels[index] = Math.floor(val);

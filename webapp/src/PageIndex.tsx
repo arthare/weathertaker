@@ -221,15 +221,12 @@ const PageIndex = () => {
     }
   }
   const onConfig = () => {
-    const apiKey = prompt("Enter password", "");
-    if(typeof apiKey === 'string' && apiKey) {
-      return fetch(`${configUrl}?apiKey=${encodeURIComponent(apiKey)}`).then((response) => response.json()).then((config:GetConfigResponse) => {
-        setConfigData(config);
-        setShowingConfig(true);
-      }, (failure) => {
-        alert("Failed to retrieve configuration info");
-      })
-    }
+    return fetch(`${configUrl}?sourceId=${encodeURIComponent(sourceResponse.id)}`).then((response) => response.json()).then((config:GetConfigResponse) => {
+      setConfigData(config);
+      setShowingConfig(true);
+    }, (failure) => {
+      alert("Failed to retrieve configuration info");
+    })
   }
 
   const onCloseConfig = () => {
