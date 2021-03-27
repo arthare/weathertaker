@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import { ImageEffects } from '../webapp/src/Configs/Utils';
+import { getHistogram, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
 import {Image} from 'canvas';
 
 export async function runTestImages() {
@@ -20,10 +20,15 @@ export async function runTestImages() {
     }
   }
 
+  const buf = fs.readFileSync("./test-images/gray-circle.proc.png");
+  const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
+  const histo = getHistogram(canvas);
+  testAssert(histo[255] === 0, "This image is designed so that we shouldn't see any pure-white pixels as long as we're only histogramming the central circle");
+
   for(var x = 0;x < imgs.length; x++) {
     await lastPromise;
     const img = imgs[x];
-    if(img.includes( '.proc.jpg')) {
+    if(img.includes( '.proc.')) {
       continue;
     }
 
@@ -35,6 +40,8 @@ export async function runTestImages() {
     
     fs.writeFileSync(`${file}.proc.jpg`, processed.toBuffer());
   }
+
+
 
   await lastPromise;
 }

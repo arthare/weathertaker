@@ -1,14 +1,9 @@
 import { Canvas } from "canvas";
 import { LatLngModel } from "../LatLng/Model";
-import { analyzeHistogram, elapsed, getMeanBrightness } from "../Utils";
+import { analyzeHistogram, elapsed, getMeanBrightness, testAssert } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
 
-function testAssert(f:any) {
-  if(!f) {
-    debugger;
-  }
-}
 
 export function apply(input:Canvas, models:any):Canvas {
 

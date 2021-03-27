@@ -2,26 +2,56 @@ import { Canvas } from "canvas";
 import {apply as processApply} from './Process/Code';
 import SunCalc from 'suncalc'
 
+export function testAssert(f:any, reason?:string) {
+  if(!f) {
+    debugger;
+  }
+}
 export function getHistogram(canvas:Canvas):number[] {
   const ctx = canvas.getContext('2d');
   const data = ctx.getImageData(0,0,canvas.width, canvas.height);
 
   let ret:number[] = [];
+  let alpha:number[] = [];
   for(var x = 0;x < 256; x++) {
     ret.push(0);
+    alpha.push(0);
   }
 
   const pix = [1,1,1,0];
   console.log("pixel format of " + canvas.width + " x " + canvas.height+ " canvas is ", (ctx as any).pixelFormat);
 
-  for(var ixPx = 0; ixPx < data.data.length; ixPx+= pix.length) {
-    for(var ixChannel = 0; ixChannel < pix.length; ixChannel++) {
-      if(pix[ixChannel]) {
+  const bytesPerRow = canvas.width * pix.length;
+
+  let pixelsChecked = 0;
+
+  for(var ixRow = 0; ixRow < canvas.height; ixRow++) {
+    const ixStart = ixRow * bytesPerRow;
+    const pctRow = ixRow / canvas.height;
+    
+    const pctLeft = 0.5 - Math.sqrt(1 - Math.pow(2*pctRow - 1, 2))/2;
+    const pctRight = 0.5 + Math.sqrt(1 - Math.pow(2*pctRow - 1, 2))/2;
+    const ixColLeft = Math.floor(pctLeft * canvas.width);
+    const ixColRight = Math.ceil(pctRight * canvas.width);
+
+    const byteStart = ixRow * bytesPerRow;
+    const rowData = data.data.slice(byteStart, byteStart + bytesPerRow);
+
+    for(var ixCol = ixColLeft; ixCol < ixColRight; ixCol++) {
+      const ixPx = ixRow * bytesPerRow + ixCol*pix.length;
+      pixelsChecked++;
+
+      for(var ixChannel = 0; ixChannel < pix.length; ixChannel++) {
         const px = data.data[ixPx + ixChannel];
-        ret[px]++;
+        if(pix[ixChannel]) {
+          ret[px]++;
+        } else {
+          alpha[px]++;
+        }
       }
     }
   }
+  testAssert(alpha[255] === pixelsChecked);
   return ret;
 }
 
