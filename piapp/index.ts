@@ -16,9 +16,10 @@ import {runWatchdog} from './index-watchdog';
 import {prepareCameraPlugins} from './PluginFactory';
 import { CameraPlugin } from './Plugin';
 import {Image} from 'canvas';
+import {SunCalc} from 'suncalc';
 
 let g_tmLastRawImage = new Date().getTime();
-const IMAGE_CADENCE = 20000;
+const DEFAULT_IMAGE_CADENCE_MS = 20000;
 
 try {
   fs.mkdirSync('./tmp');
@@ -37,6 +38,15 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   let cameraPlugins:CameraPlugin[] = prepareCameraPlugins();
 
 
+  function getCurrentSunAngle(models:any) {
+    if(models['LatLng']) {
+      const latLng:LatLngModel = models['LatLng'];
+      const pos = SunCalc.getPosition(new Date(), latLng.lat, latLng.lng);
+      const angleDegrees = pos.altitude * 180 / Math.PI;
+      return angleDegrees;
+    }
+    return 45;
+  }
   function getApiUrl(api:string) {
     let base = 'http://fastsky.ca/api';
     if(platform() === 'win32') {
@@ -46,11 +56,15 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
     return `${base}/${api}`;
   }
 
+  const defaultCameraModel = {
+    desiredW: 1280,
+    desiredH: 720,
+    minSunAngle: -90,
+    desiredPhotoPeriodMs: DEFAULT_IMAGE_CADENCE_MS,
+  }
+
   let g_currentModels = {
-    Camera: {
-      desiredW: 1280,
-      desiredH: 720,
-    }
+    Camera: defaultCameraModel,
   }; // the configured models from the database.  Gets updated on each image submission
 
   let config:any;
@@ -145,9 +159,9 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   function takePictureLoop() {
     let mySubmitCount = submitCount++;
 
-    console.log(elapsed(), mySubmitCount, "commanding to take one picture", ixCurrentPlugin);
+    console.log(elapsed(), mySubmitCount, "commanding to take one picture", ixCurrentPlugin, " photo period ", g_currentModels['Camera'].desiredPhotoPeriodMs);
     const tmStart = elapsed();
-    const tmNext = tmStart + IMAGE_CADENCE;
+    const tmNext = tmStart + g_currentModels['Camera'].desiredPhotoPeriodMs;
     return captureAndProcessOneImage().then(async (data:Buffer) => {
       
       console.log(elapsed(), mySubmitCount, "image captured and processed");
@@ -163,6 +177,16 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
           apiKey: config.apiKey,
           imageBase64: base64
         }
+
+        const currentSunAngle = getCurrentSunAngle(g_currentModels);
+        console.log("Current sun angle is ", currentSunAngle);
+        if(currentSunAngle < g_currentModels.Camera.minSunAngle) {
+          // you said to not do sun angles less than this!
+          console.log("Skipping posting because sun angle not high enough.  Sun angle is ", currentSunAngle.toFixed(1), " limit is ", g_currentModels.Camera.minSunAngle);
+          return Promise.resolve();
+        }
+
+
         return fetch(url, {
           method: 'POST',
           headers: {
@@ -177,14 +201,19 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
             console.log(elapsed(), mySubmitCount, "posted successfully!");
             return response.json().then((response) => {
               g_currentModels = response?.models || {};
-              console.log("new model from web: ", response);
+              console.log("new model from web: ", JSON.stringify(response, undefined, '\t'));
               
               let cameraConfig:CameraModel = g_currentModels['Camera'];
               if(!cameraConfig) {
-                g_currentModels['Camera'] = {
-                  desiredW: 1280,
-                  desiredH: 720,
+                g_currentModels['Camera'] = defaultCameraModel;
+              } else {
+                for(var key in defaultCameraModel) {
+                  if(!cameraConfig[key]) {
+                    cameraConfig[key] = defaultCameraModel[key];
+                    console.log("Updated camera config with  ", key, " = ", defaultCameraModel['key']);
+                  }
                 }
+                g_currentModels['Camera'] = cameraConfig;
               }
             })
           }
