@@ -10,9 +10,18 @@ export function getHistogram(canvas:Canvas):number[] {
   for(var x = 0;x < 256; x++) {
     ret.push(0);
   }
-  data.data.forEach((px:number) => {
-    ret[px]++;
-  })
+
+  const pix = [1,1,1,0];
+  console.log("pixel format of " + canvas.width + " x " + canvas.height+ " canvas is ", (ctx as any).pixelFormat);
+
+  for(var ixPx = 0; ixPx < data.data.length; ixPx+= pix.length) {
+    for(var ixChannel = 0; ixChannel < pix.length; ixChannel++) {
+      if(pix[ixChannel]) {
+        const px = data.data[ixPx + ixChannel];
+        ret[px]++;
+      }
+    }
+  }
   return ret;
 }
 
