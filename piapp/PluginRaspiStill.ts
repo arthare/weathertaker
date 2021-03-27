@@ -31,7 +31,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
   private _maxExposureUs = 8000000; // 8s for the v2 camera once you install the better raspistill
   private _preferredExposureUs = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
-  private _minExposureUs = 40; // 1/10000s
+  private _minExposureUs = 20; // 1/10000s
 
   // these appear to be the actual capabilities of the camera
   private _maxIso = 800;
