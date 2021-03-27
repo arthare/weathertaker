@@ -16,7 +16,7 @@ import {runWatchdog} from './index-watchdog';
 import {prepareCameraPlugins} from './PluginFactory';
 import { CameraPlugin } from './Plugin';
 import {Image} from 'canvas';
-import {SunCalc} from 'suncalc';
+import SunCalc from 'suncalc';
 
 let g_tmLastRawImage = new Date().getTime();
 const DEFAULT_IMAGE_CADENCE_MS = 20000;
