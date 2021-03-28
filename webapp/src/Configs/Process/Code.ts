@@ -52,8 +52,27 @@ export function apply(input:Canvas, models:any):Canvas {
   const pixels = data.data;
 
   console.log(elapsed(), "about to level");
-  const span = histoResult.high - histoResult.low;
-  if(span > 10) {
+  let span = histoResult.high - histoResult.low;
+
+  const MIN_SPAN = 20;
+  if(span < MIN_SPAN) {
+    if(histoResult.mean < MIN_SPAN / 2) {
+      histoResult.low = 0;
+      histoResult.high = MIN_SPAN;
+      histoResult.mean = MIN_SPAN / 2;
+    } else if(histoResult.mean > peakHistoBrightness - MIN_SPAN/2) {
+      histoResult.low = peakHistoBrightness - MIN_SPAN;
+      histoResult.high = peakHistoBrightness;
+      histoResult.mean = peakHistoBrightness - MIN_SPAN/2;
+    } else {
+      histoResult.low = histoResult.mean - MIN_SPAN/2;
+      histoResult.high = histoResult.mean + MIN_SPAN/2;
+    }
+    span = histoResult.high - histoResult.low;
+    testAssert(span >= 20, "after all this math it better be");
+  }
+
+  if(span >= MIN_SPAN) {
     pixels.forEach((byt, index) => {
       let val = byt;
       if(val < histoResult.mean) {
