@@ -16,11 +16,13 @@ export function apply(input:Canvas, models:any):Canvas {
       dropPctDark: 2.5,
       dropPctLight: 99.9,
       middle: 32,
+      minStretchSpan: 60,
     },
     night: {
       dropPctDark: 10.0,
       dropPctLight: 90,
       middle: 128,
+      minStretchSpan: 60,
     },
   }
 
@@ -39,6 +41,7 @@ export function apply(input:Canvas, models:any):Canvas {
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
+    finalModel.minStretchSpan = pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan;
     console.log("processing with pctDay = ", pctDay, finalModel.middle, finalModel.dropPctDark, finalModel.dropPctLight);
   }
 
@@ -54,7 +57,7 @@ export function apply(input:Canvas, models:any):Canvas {
   console.log(elapsed(), "about to level");
   let span = histoResult.high - histoResult.low;
 
-  const MIN_SPAN = 20;
+  const MIN_SPAN = finalModel.minStretchSpan;
   if(span < MIN_SPAN) {
     if(histoResult.mean < MIN_SPAN / 2) {
       histoResult.low = 0;
@@ -69,7 +72,7 @@ export function apply(input:Canvas, models:any):Canvas {
       histoResult.high = histoResult.mean + MIN_SPAN/2;
     }
     span = histoResult.high - histoResult.low;
-    testAssert(span >= 20, "after all this math it better be");
+    testAssert(span >= MIN_SPAN, "after all this math it better be");
   }
 
   if(span >= MIN_SPAN) {
