@@ -86,9 +86,13 @@ export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:numb
 
   let results:number[] = [];
   let currentSum = 0;
+  let maxHistoBucketWithValue = 0;
   for(var value = 0; value < comboHisto.length; value++) {
     const thisAddition = comboHisto[value];
     
+    if(thisAddition > 0) {
+      maxHistoBucketWithValue = value;
+    }
     targets.forEach((target, index) => {
       const thisSum = currentSum;
       const nextSum = currentSum + thisAddition;
@@ -100,8 +104,8 @@ export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:numb
     })
     currentSum += thisAddition;
   }
-  
-  return {low:results[0], mean:results[1], high:results[2]};
+
+  return {low:results[0], mean:results[1], high:results[2] || maxHistoBucketWithValue};
 }
 
 
