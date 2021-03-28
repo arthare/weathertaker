@@ -17,10 +17,10 @@ function makeVideo(imageIds:number[]) {
   working = false;
 }
 
-let stale = {}; // mapping from source handles to whether they are stale or not
+let g_staleCount:{[key:string]:number} = {}; // mapping from source handles to whether they are stale or not
 
 export function markSourceStale(sourceId:number) {
-  stale[sourceId] = true;
+  g_staleCount[sourceId] = Math.max(g_staleCount[sourceId] || 0, 1);
 }
 
 async function cleanupOldVideos() {
@@ -151,19 +151,35 @@ async function generateVideoFor(sourceId:number):Promise<any> {
 
 async function checkForWork() {
 
-  console.log("Video maker checking for work.  Working? ", working, " stale source IDs: ", stale);
+  console.log("Video maker checking for work.  Working? ", working, " stale source IDs: ", g_staleCount);
   if(!working) {
     // time to find a stale thing to do!
-    let staleSourceIds = [];
-    for(var key in stale) {
-      if(stale[key]) {
-        staleSourceIds.push(parseInt(key));
+    let staleSourceIds:number[] = [];
+    for(var key in g_staleCount) {
+      if(g_staleCount[key]) {
+        // we'll do this like a lottery - you get (<passed-over count>)^1.5 tickets in the lottery to get your video made
+        const ticketCount = Math.pow(g_staleCount[key], 1.5);
+        for(var x = 0;x < ticketCount; x++) {
+          staleSourceIds.push(parseInt(key));
+        }
       }
     }
 
     if(staleSourceIds.length > 0) {
       const ixToWork = Math.floor(Math.random() * staleSourceIds.length);
       const sourceId = staleSourceIds[ixToWork];
+
+      // update lottery ticket count
+      for(var key in g_staleCount) {
+        if(key !== ('' + sourceId) && g_staleCount[key] !== 0) {
+          // this didn't get picked, so she gets another ticket next time round.
+          g_staleCount[key]++;
+          console.log("Video lottery: ", key, " will have " + g_staleCount[key] + " tickets next time");
+        }
+      }
+
+
+      
       try {
         console.log("going to work on sourceId ", sourceId);
         working = true; // we're going to work!
@@ -172,7 +188,7 @@ async function checkForWork() {
         console.log("Error making videos: ", e);
       } finally {
         working = false;
-        stale[sourceId] = false;
+        g_staleCount[sourceId] = 0;
         console.log("done working on sourceId", sourceId);
       }
     }
@@ -186,12 +202,12 @@ async function checkForWork() {
 
 export function notifyDirtySource(sourceId:number) {
   console.log(`marked ${sourceId} as dirty`);
-  stale[sourceId] = true;
+  g_staleCount[sourceId] = Math.max(1, g_staleCount[sourceId] || 0);
 }
 
 export function initVideoMaker() {
-  stale = {
-    '2': true,
+  g_staleCount = {
+    '2': 1,
   };
 
   checkForWork();

@@ -1,0 +1,29 @@
+.ConfigModalContents {
+  &__Container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  &__Text {
+    flex: 1 1 auto;
+    font-family: monospace;
+  }
+  &__Images-After {
+    flex: 0 0 25vh;
+    height: 25vh;
+    text-align: center;
+  }
+  &__Images {
+    flex: 0 0 25vh;
+    height: 25vh;
+    text-align: center;
+
+
+    &--Noon {
+      height: 100%;
+    }
+    &--Night {
+      height: 100%;
+    }
+  }
+}

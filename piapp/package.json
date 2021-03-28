@@ -13,9 +13,10 @@
     "image-js": "^0.31.4",
     "node-fetch": "^2.6.1",
     "node-raspistill": "^1.0.3",
-    "node-webcam": "^0.8.0"
+    "node-webcam": "^0.8.0",
+    "suncalc": "^1.8.0"
   },
   "devDependencies": {
-    "@types/node": "^14.14.34"
+    "@types/node": "^14.14.35"
   }
 }

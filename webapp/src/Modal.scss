@@ -1,0 +1,35 @@
+.Modal {
+  &__Container {
+    border: 1px solid lightgrey;
+    background-color: rgba(255,255,255,0.8);
+    transition: left 0.75s;
+
+
+    position: fixed;
+    left: -50vw;
+    width: 50vw;
+    top: 12.5vh;
+    height: 75vh;
+
+    z-index: 500;
+    text-align: left;
+    padding: 16px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+
+    &.Showing {
+      left: 25vw;
+    }
+  }
+  &__Contents {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+  &__Close {
+    flex: 0 0 auto;
+    text-align: left;
+  }
+}

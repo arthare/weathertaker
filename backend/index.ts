@@ -1,12 +1,12 @@
 import express from 'express';
 import * as core from 'express-serve-static-core';
 import {postStartup, setCorsHeaders, setUpCors} from './HttpUtils';
-import Db, { VideoInfo } from './Db';
+import Db, { ImageInfo, SourceInfo, VideoInfo } from './Db';
 import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
-import {ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission} from '../types/http';
 import { resolveNaptr } from 'dns';
+import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
 
 
 let app = <core.Express>express();
@@ -33,12 +33,40 @@ function handleFailure(req:core.Request, res:core.Response) {
     res.end();
   }
 }
+app.get('/next-source', (req:core.Request, res:core.Response) => {
 
+  setCorsHeaders(req, res);
+  return Db.getNextSource(parseInt(req.query.id)).then(handleSuccess(req,res), handleFailure(req,res));
+
+});
+app.get('/source', (req:core.Request, res:core.Response) => {
+  // fetch the video metadata and send it to the browser, who can then decide what to do
+  setCorsHeaders(req, res);
+  return Db.getSourceInfo(req.query.id).then(handleSuccess(req,res), handleFailure(req,res));
+
+});
 app.get('/video', (req:core.Request, res:core.Response) => {
   // fetch the video metadata and send it to the browser, who can then decide what to do
   setCorsHeaders(req, res);
-  return Db.getVideo(req.query.id || null).then(handleSuccess(req,res), handleFailure(req,res));
+  if(req.query.sourceId) {
+    return Db.getMostRecentVideoOfSource(req.query.sourceId).then(handleSuccess(req,res), handleFailure(req,res));
+  } else if(req.query.sourceHandle) {
+    return Db.getMostRecentVideoOfSourceByHandle(req.query.sourceHandle).then(handleSuccess(req,res), handleFailure(req,res));
+  } else {
+    return Db.getVideo(req.query.id || null).then(handleSuccess(req,res), handleFailure(req,res));
+  }
 
+});
+app.post('/models', (req:core.Request, res:core.Response) => {
+  return postStartup(req, res).then(async (modelUpdate:any) => {
+    const currentModel = await Db.getCurrentModels(modelUpdate.apiKey);
+    for(var key in modelUpdate) {
+      if(key !== 'apiKey') {
+        currentModel[key] = modelUpdate[key];
+      }
+    }
+    return Db.setCurrentModels(modelUpdate.apiKey, currentModel);
+  }).then(handleSuccess(req,res), handleFailure(req,res));
 });
 
 console.log("about to create download-video");
@@ -71,6 +99,41 @@ app.get('/download-video', (req:core.Request, res:core.Response) => {
   }
 });
 
+
+app.get('/last-image', async (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+
+  const image:ImageInfo = await Db.getLastImageFromSource(req.query.sourceId);
+  
+  if(fs.existsSync(image.filename)) {
+    console.log("transferring video with res.download");
+    res.download(image.filename);
+  } else {
+    handleFailure(req,res)(new Error("Image doesn't actually exist"));
+  }
+  
+});
+
+app.get('/config', async (req:core.Request, res:core.Response) => {
+  setCorsHeaders(req, res);
+
+  try {
+    const source = await Db.getSourceInfo(req.query.sourceId);
+    const models = await Db.getCurrentModels(req.query.sourceId);
+    const noon = await Db.getRawFile({when: 'noon', sourceId: source.id});
+    const night = await Db.getRawFile({when: 'night', sourceId: source.id});
+
+    const ret:GetConfigResponse = {
+      models,
+      noonBase64: noon.toString('base64'),
+      nightBase64: night.toString('base64'),
+    }
+    handleSuccess(req,res)(ret);
+  } catch(e) {
+    handleFailure(req,res)(e);
+  }
+});
+
 app.get('/reaction-count', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   if(req.query.videoId) {
@@ -86,8 +149,21 @@ app.get('/reaction-count', (req:core.Request, res:core.Response) => {
   }
 });
 
+app.post('/recent-raw-file-submission', (req:core.Request, res:core.Response) => {
+  console.log("someone is sending us a unmodified file");
+  setCorsHeaders(req, res);
+  return postStartup(req,res).then(async (query:RecentRawFileSubmissionRequest) => {
+    return Db.updateRawFile(query).then(handleSuccess(req,res), handleFailure(req,res));
+
+  });
+});
+app.get('/recent-raw-file', (req:core.Request, res:core.Response) => {
+  console.log("someone is requesting the raw files for source ", req.query);
+  setCorsHeaders(req, res);
+  return Db.updateRawFile(req.query).then(handleSuccess(req,res), handleFailure(req,res));
+});
+
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
-  console.log("Someone is posting an image");
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
 
@@ -105,7 +181,13 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
       debugger; // hey developer, something messed up!
       throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
     }
-    return Db.imageSubmission(query);
+    return Db.imageSubmission(query).then(async (submit) => {
+      const source = await Db.validateApiKey(query.apiKey);
+      return {
+        submit,
+        models: await Db.getCurrentModels(source.id),
+      }
+    });
   }).then(handleSuccess(req,res), (failure) => {
     console.log("image-submission failure: ", failure && failure.message);
     handleFailure(req,res)(failure);

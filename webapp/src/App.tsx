@@ -18,6 +18,7 @@ function App() {
         <div className="App-Content">
           <Switch>
             <Route exact path="/" children={<PageIndex />} />
+            <Route exact path="/location/:handle" children={<PageIndex />} />
             <Route exact path="/test-submit" children={<PageTestSubmit />} />
           </Switch>
         </div>

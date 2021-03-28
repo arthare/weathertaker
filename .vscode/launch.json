@@ -39,6 +39,25 @@
           "group": "build",
       },
       "outFiles": ["${workspaceFolder}/piapp/dist/**/*.js"]
+    }, {
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/piapp",
+      "name": "Image Processing Test",
+      "skipFiles": [
+          "<node_internals>/**"
+      ],
+      "args": ["test-images"],
+      "program": "${workspaceFolder}/piapp/index.ts",
+      "preLaunchTask":{
+          "type": "typescript",
+          "tsconfig": "piapp/tsconfig.json",
+          "problemMatcher": [
+              "$tsc"
+          ],
+          "group": "build",
+      },
+      "outFiles": ["${workspaceFolder}/piapp/dist/**/*.js"]
     }
   ]
 }

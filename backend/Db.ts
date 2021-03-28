@@ -7,14 +7,18 @@ import atob from 'atob';
 import {guaranteePath} from './FsUtils';
 import md5 from 'md5';
 import { notifyDirtySource } from './VideoMaker';
-import { ImageSubmissionRequest, ReactionType } from '../types/http';
 import { platform } from 'os';
+import { rejects } from 'assert';
+import { ImageSubmissionRequest, ReactionType, RecentRawFileRequest, RecentRawFileSubmissionRequest } from '../webapp/src/Configs/Types';
 
 const config = JSON.parse(fs.readFileSync('./db-config.json', 'utf8'));
 
 export interface SourceInfo {
   handle:string;
   id:number;
+  description:string;
+  name:string;
+  nextHandle:string;
 }
 
 export interface ImageInfo {
@@ -57,15 +61,16 @@ function getPathToVideo(videoInfo:VideoInfo) {
 export default class Db {
 
   static getSourceInfo(sourceId:number):Promise<SourceInfo> {
+    console.log("they're asking for source info from ", sourceId);
     return getDb().then((db) => {
       return new Promise<SourceInfo>((resolve, reject) => {
-        db.execute(`select id,handle from sources where id=?`, [sourceId], (err, results:any[]) => {
+        db.execute(`select id,handle,name,description from sources where id=?`, [sourceId], (err, results:any[]) => {
           if(err) {
             reject(err);
           } else if(results.length === 1) {
             resolve(results[0]);
           } else {
-            console.error("Results for apikey had length !== 1");
+            console.error(`Results for sourceinfo ${sourceId} had length !== ${results.length}`);
             reject(new Error("Something went wrong"));
           }
         })
@@ -85,7 +90,7 @@ export default class Db {
           } else if(results.length === 1) {
             resolve(results[0]);
           } else {
-            console.error("Results for apikey had length !== 1");
+            console.error(`Results for apikey '${apiKey}' had length !== 1`);
             reject(new Error("Something went wrong"));
           }
         })
@@ -106,13 +111,13 @@ export default class Db {
           const filename = `${process.cwd()}/images/${sourceInfo.handle}/${md5Result}.jpg`;
           guaranteePath(filename);
           fs.writeFileSync(filename, imageSubmissionRequest.imageBase64, 'base64');
-
+          
 
           db.execute('insert into images (sourceid,unixtime,filename) values (?,?,?)', [sourceInfo.id, Math.floor(new Date().getTime()/1000), filename], (err, insertResult:any) => {
             if(err) {
               reject(err);
             } else {
-              console.log("inserted image ", insertResult?.insertId);
+              console.log("inserted image ", insertResult?.insertId, " with size ", imageSubmissionRequest.imageBase64.length);
               const newFilename = `${process.cwd()}/images/${sourceInfo.handle}/${insertResult.insertId}.jpg`;
               fs.renameSync(filename, newFilename);
               db.execute('update images set filename=? where id=?', [newFilename, insertResult.insertId], (err, renameResult:any) => {
@@ -218,37 +223,239 @@ export default class Db {
     })
   }
 
-  static getVideo(id:number|null):Promise<VideoInfo> {
+  static async updateRawFile(query:RecentRawFileSubmissionRequest):Promise<any> {
+    // the raw files allow us to do editing previews in the webapp
+
+    const source = await Db.validateApiKey(query.apiKey);
+    // let's save the file
+    const path = `./images/${source.handle}/raw-${query.when}.jpg`;
+    fs.writeFile(path, Buffer.from(query.imageBase64, 'base64'), (err) => {
+      if(err) {
+        throw (err);
+      } else {
+        // file saved!  since it's a fixed path only depending on noon or night for a given handle, we don't actually have to have this in the DB.
+      }
+    });
+  }
+  static async getRawFile(query:RecentRawFileRequest):Promise<Buffer> {
+    const source = await Db.getSourceInfo(query.sourceId);
+
+    const path = `./images/${source.handle}/raw-${query.when}.jpg`;
+    return new Promise((resolve, reject) => {
+      fs.readFile(path, (err, data:Buffer) => {
+        if(err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      })
+    })
+  }
+
+  static async getLastImageFromSource(sourceId:number|string):Promise<ImageInfo> {
+    const db = await getDb();
+
+    return new Promise((resolve, reject) => {
+      db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 1', [sourceId], (err, results:any[]) => {
+        if(err) {
+          reject(err);
+        } else if(results.length === 1) {
+          resolve(results.map((res) => {
+            return {
+              filename: res.filename,
+              tmTaken: res.unixtime*1000,
+              id: res.id,
+            }
+          })[0]);
+        } else {
+          throw new Error("Could not find image");
+        }
+      })
+    })
+  }
+
+  static async getCurrentModels(sourceId:number):Promise<any> {
+    const db = await getDb();
+
+    return new Promise((resolve, reject) => {
+      db.execute(`select models from sources where sources.id=?`, [sourceId], (err, results:any[]) => {
+        if(err) {
+          reject(err);
+        } else if(results.length === 1) {
+          try {
+            resolve(JSON.parse(results[0].models));
+          } catch(e) {
+            // this is fine, just means it has no data yet
+            resolve({error: e.message}); 
+          }
+          
+        } else {
+          reject(new Error("Nothing found"));
+        }
+      })
+    }).finally(() => db.end());
+  }
+  static async setCurrentModels(apiKey:string, newModel:any):Promise<any> {
+
+    // let's make sure that every key in newModel represents a model that actually exists
+    for(var key in newModel) {
+      const regexOnlyLetters = /[\D]/gi;
+      key = key.replace(regexOnlyLetters, '');
+      const required = require(`../webapp/src/Configs/${key}`);
+      // if we didn't throw, we're good!
+    }
+
+    const db = await getDb();
+
+    return new Promise((resolve, reject) => {
+      db.execute(`update sources set model=? where apikey=?`, [JSON.stringify(newModel), apiKey], (err, results:any[]) => {
+        if(err) {
+          reject(err);
+        } else if(results.length === 1) {
+          try {
+            resolve(JSON.parse(results[0].model));
+          } catch(e) {
+            // this is fine, just means it has no data yet
+            resolve({}); 
+          }
+          
+        } else {
+          reject(new Error("Nothing found"));
+        }
+      })
+    })
+
+  }
+  static getNextSource(startFromId:number):Promise<SourceInfo> {
+    // let's find every source with a fresh (recent in 1 day) video
+    if(typeof startFromId !== 'number') {
+      throw new Error("StartfromId needs to be a number...");
+
+    }
+    return getDb().then((db) => {
+      return new Promise<SourceInfo>((resolve, reject) => {
+
+        const msInDay = 24*3600*1000;
+        const tmStart = new Date().getTime() - 7*msInDay;
+        db.execute(`select sources.id from videos,sources where videos.removed=0 and videos.sourceid=sources.id and videos.tmStart > ? group by sources.id order by sources.handle`, [tmStart/1000], (err, results:any[]) => {
+          if(err) {
+            reject(err);
+          } else if(results.length > 0) {
+            
+            let ixMe = results.findIndex((res) => res.id === startFromId);
+            let ixNext = ixMe;
+            if(ixMe < 0) {
+              // hmm, the one they requested apparently doesn't even have a recent video.
+              ixMe = Math.floor((Math.random() * results.length) % results.length);
+            }
+            ixNext = (ixMe + 1) % results.length;
+
+            const idNext = results[ixNext].id;
+            return this.getSourceInfo(idNext).then(resolve, reject);
+          } else {
+            reject(new Error("No videos found"));
+          }
+        })
+      }).finally(() => db.end());
+    })
+
+  }
+
+  static getMostPopularSource():Promise<SourceInfo> {
+    return getDb().then((db) => {
+      return new Promise<SourceInfo>((resolve, reject) => {
+
+        db.execute(`select count(reactions.id) as reactionCount, sources.name, sources.description, sources.id, sources.handle as handle from videos,sources,reactions where reactions.videoid=videos.id and videos.sourceid=sources.id group by sources.id order by reactionCount desc limit 1;`, [], (err, result:any[]) => {
+          if(err) {
+            reject(err);
+          } else if(result.length === 1) {
+            resolve(result[0] as SourceInfo);
+          } else {
+            reject(new Error("No videos found"));
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+
+  private static processRawVideoResult(raw:any) {
+    
+    let filename:string = raw.filename;
+
+    if(filename) {
+      const ixLastSlash = filename.lastIndexOf('/');
+      filename = filename.slice(ixLastSlash+1);
+      return({
+        filename,
+        id: raw.id,
+        sourceId: raw.sourceid,
+        handle: raw.handle,
+      } as VideoInfo);
+    }
+  }
+  static async getMostRecentVideoOfSourceByHandle(handle:string):Promise<VideoInfo> {
 
     return getDb().then((db) => {
       return new Promise<VideoInfo>((resolve, reject) => {
 
         let q;
         let args = [];
-        if(id !== null) {
-          q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id and videos.id=?`;
-          args = [id];
-        } else {
-          q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id order by id desc limit 1`;
-          args = [];
-        }
+        q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id and sources.handle=? order by id desc limit 1`;
+        args = [handle];
 
         db.execute(q, args, (err, result:any[]) => {
           if(err) {
             reject(err);
           } else if(result.length === 1) {
-            let filename:string = result[0].filename;
+            resolve(this.processRawVideoResult(result[0]));
+          } else {
+            reject(new Error("No videos found"));
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+  static async getMostRecentVideoOfSource(sourceId:number):Promise<VideoInfo> {
 
-            if(filename) {
-              const ixLastSlash = filename.lastIndexOf('/');
-              filename = filename.slice(ixLastSlash+1);
-              resolve({
-                filename,
-                id: result[0].id,
-                sourceId: result[0].sourceid,
-                handle: result[0].handle,
-              } as VideoInfo);
-            }
+    return getDb().then((db) => {
+      return new Promise<VideoInfo>((resolve, reject) => {
+
+        let q;
+        let args = [];
+        q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=? order by id desc limit 1`;
+        args = [sourceId];
+
+        db.execute(q, args, (err, result:any[]) => {
+          if(err) {
+            reject(err);
+          } else if(result.length === 1) {
+            resolve(this.processRawVideoResult(result[0]));
+          } else {
+            reject(new Error("No videos found"));
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+  static async getVideo(id:number|null):Promise<VideoInfo> {
+    if(id === null) {
+      // didn't specify a video?  then you're getting one from a popular source
+      const sourceId = await this.getMostPopularSource();
+      id = (await this.getMostRecentVideoOfSource(sourceId.id)).id;
+    }
+    return getDb().then((db) => {
+      return new Promise<VideoInfo>((resolve, reject) => {
+
+        let q;
+        let args = [];
+        q = `select filename,sourceid,videos.id,sources.handle as handle from videos,sources where videos.sourceid=sources.id and videos.id=?`;
+        args = [id];
+
+        db.execute(q, args, (err, result:any[]) => {
+          if(err) {
+            reject(err);
+          } else if(result.length === 1) {
+            resolve(this.processRawVideoResult(result[0]));
           } else {
             reject(new Error("No videos found"));
           }

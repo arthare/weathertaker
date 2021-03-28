@@ -1,9 +1,32 @@
+@mixin FAControl() {
+  font-size: 50px;
+  cursor: pointer;
+  color: white;
+  font-size: 50px;
+  cursor: pointer;
+
+  &:hover {
+    text-shadow: 3px 3px 3px black;
+    color: blue;
+  }
+
+
+}
+
 .Index {
   &__Video {
     width: 100vw;
     bottom: 0px;
     position: absolute;
     left: 0px;
+    z-index: 1;
+  }
+  &__VideoBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    filter: grayscale(100%);
   }
   &__Video-Holder {
 
@@ -22,6 +45,33 @@
     margin-right: auto;
     padding-right: 16px;
     padding-top: 16px;
+    z-index: 2;
+  }
+  &__Video-Description {
+    text-align: left;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    top: 0vh;
+    left: 0vw;
+    padding: 32px;
+    color: white;
+    text-shadow: 4px 4px 4px black;
+    font-size: 18px;
+    max-width: 200px;
+    background-color: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.3);
+    border-bottom-right-radius: 32px;
+    z-index: 2;
+  }
+  &__Video-Skip {
+    @include FAControl();
+  }
+  &__Video-Title {
+    font-size: 24px;
+  }
+  &__Video-Subtitle {
+    font-size: 12px;
   }
   &__Video-Reaction {
     position: relative;
@@ -60,6 +110,7 @@
     width: 100px;
     height: 100px;
     top: 0px;
+    z-index: 2;
   }
   &__Video-Controls {
     position: absolute;
@@ -69,28 +120,44 @@
     height: 100px;
     display: flex;
     flex-direction: row;
+    z-index: 2;
   }
   &__Video-Control {
     flex: 1 1 0px;
-    color: white;
-    font-size: 50px;
     padding: 25px;
-    cursor: pointer;
+    @include FAControl();
+    z-index: 2;
+  }
+  &__Video-LastImageModal {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    left: 15vw;
+    top: 15vh;
+    width: 70vw;
+    height: 70vh;
+    z-index: 10000;
+    padding: 16px;
+    background-color: white;
+    box-shadow: 5px 5px 5px black;
 
-    &:hover {
-      text-shadow: 3px 3px 3px black;
-      color: blue;
+    &--Button {
+      flex: 1 1 auto;
+      height: 32px;
     }
+  }
+  &__Video-LastImage {
+    flex: 1 1 auto;
+    margin-bottom: 8px;
+    width: 100%;
+    max-height: calc(100% - 32px);
   }
 }
 
 @media screen and (orientation:portrait) {
   .Index {
     &__Video {
-      width: 100vh;
-      top: 0px;
-      position: auto;
-      left: auto;
     }
     &__Video-Holder {
       width: 100vh;
