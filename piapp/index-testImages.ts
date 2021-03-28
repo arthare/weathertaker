@@ -12,28 +12,30 @@ export async function runTestImages() {
   let lastPromise:Promise<any> = Promise.resolve();
 
   const modelToTest =  {
-    Camera: {
-      desiredW: 1920,
-      desiredH: 1272,
-      desiredPhotoPeriodMs: 10000,
-      minSunAngle: -90
+    "Camera": {
+      "desiredW": 1920,
+      "desiredH": 1272,
+      "desiredPhotoPeriodMs": 10000,
+      "minSunAngle": -90
     },
-    LatLng: { lat: 51.1984, lng: -114.487 },
-    Process: {
-      day: {
-        dropPctDark: 0,
-        middle: 96,
-        dropPctLight: 100,
-        minStretchSpan: 80
+    "LatLng": {
+      "lat": 51.1984,
+      "lng": -114.487
+    },
+    "Process": {
+      "day": {
+        "dropPctDark": 0,
+        "middle": 128,
+        "dropPctLight": 100,
+        "minStretchSpan": 80
       },
-      night: {
-        dropPctDark: 10,
-        middle: 128,
-        dropPctLight: 95,
-        minStretchSpan: 80
+      "night": {
+        "dropPctDark": 10,
+        "middle": 128,
+        "dropPctLight": 95,
+        "minStretchSpan": 40
       }
-    },
-    CurrentTime: { tm: 1616970040965, pctDay: 1 }
+    }
   }
 
   const buf = fs.readFileSync("./test-images/special/gray-circle.proc.png");

@@ -14,15 +14,15 @@ export function apply(input:Canvas, models:any):Canvas {
   const defaultModel:ProcessModel = {
     day: {
       dropPctDark: 2.5,
-      dropPctLight: 99.9,
-      middle: 32,
-      minStretchSpan: 60,
+      dropPctLight: 100,
+      middle: 128,
+      minStretchSpan: 80,
     },
     night: {
       dropPctDark: 10.0,
       dropPctLight: 90,
       middle: 128,
-      minStretchSpan: 60,
+      minStretchSpan: 80,
     },
   }
 
