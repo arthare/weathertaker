@@ -164,7 +164,6 @@ app.get('/recent-raw-file', (req:core.Request, res:core.Response) => {
 });
 
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
-  console.log("Someone is posting an image");
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
 

@@ -282,7 +282,6 @@ export default class Db {
         if(err) {
           reject(err);
         } else if(results.length === 1) {
-          console.log("tried to get model ", results);
           try {
             resolve(JSON.parse(results[0].models));
           } catch(e) {

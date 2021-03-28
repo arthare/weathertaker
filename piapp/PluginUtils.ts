@@ -78,7 +78,7 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
     const basicStats = getMeanBrightness(image);
     
     const mean = basicStats.mean;
-    const targetMean = peakHistoBrightness * 0.65
+    const targetMean = peakHistoBrightness * 0.55;
     const multiplyToGetToTarget = targetMean / mean;
 
     console.log(elapsed(), "Mean brightness: ", mean, " target: ", targetMean);
