@@ -2,6 +2,8 @@ import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import { getHistogram, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
 import {Image} from 'canvas';
+import { ProcessModel } from '../webapp/src/Configs/Process/Model';
+import { CurrentTimeModel } from '../webapp/src/Configs/CurrentTime/Model';
 
 export async function runTestImages() {
 
@@ -10,14 +12,28 @@ export async function runTestImages() {
   let lastPromise:Promise<any> = Promise.resolve();
 
   const modelToTest = {
-    LatLng: {
-      lat: 51.1985,
-      lng: -114.487,
-    } as LatLngModel,
-    CurrentTime: {
-      tm: new Date("2015-01-01T00:00:00-08:00"),
-      pctDay: 1.0,
-    }
+    Camera: {                                    
+      desiredW: 1920,                            
+      desiredH: 1272,                            
+      desiredPhotoPeriodMs: 10000,               
+      minSunAngle: -90                           
+    },                                           
+    LatLng: { lat: 51.1984, lng: -114.487 },     
+    Process: {                                   
+      day: {                                     
+        dropPctDark: 10,                         
+        middle: 128,                             
+        dropPctLight: 97.5,                      
+        minStretchSpan: 40                       
+      },                                         
+      night: {                                   
+        dropPctDark: 10,                         
+        middle: 128,                             
+        dropPctLight: 95,                        
+        minStretchSpan: 40                       
+      }                                          
+    },                                           
+    CurrentTime: { tm: 1616942105100, pctDay: 1 }
   }
 
   const buf = fs.readFileSync("./test-images/gray-circle.proc.png");

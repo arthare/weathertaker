@@ -41,7 +41,7 @@ export function apply(input:Canvas, models:any):Canvas {
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
-    finalModel.minStretchSpan = pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan;
+    finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
     console.log("processing with pctDay and finalModel = ", pctDay, finalModel);
   }
 
@@ -81,11 +81,11 @@ export function apply(input:Canvas, models:any):Canvas {
       if(val < histoResult.mean) {
         const pct = Math.max(0, (val - histoResult.low) / (histoResult.mean - histoResult.low));
         testAssert(pct >= 0 && pct <= 1.0);
-        val = pct * finalModel.middle;
+        val = Math.floor(pct * finalModel.middle);
       } else {
         const pct = Math.min(1, (val-histoResult.mean) / (histoResult.high-histoResult.mean));
         testAssert(pct >= 0 && pct <= 1.0);
-        val = finalModel.middle + pct*(256-finalModel.middle);
+        val = finalModel.middle + Math.floor(pct*(255-finalModel.middle));
       }
 
       pixels[index] = Math.floor(val);
