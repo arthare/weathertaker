@@ -12,7 +12,7 @@ export async function runWatchdog() {
     clearTimeout(rebootTimeout);
     rebootTimeout = setTimeout(() => {
       execSync('sudo reboot');
-    }, 120000);
+    }, 5*60000);
   }
 
   fs.watchFile('./tmp/from-camera.jpg', {

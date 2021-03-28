@@ -35,6 +35,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
   // these appear to be the actual capabilities of the camera
   private _maxIso = 800;
   private _minIso = 100;
+  private _myMode = 4;
 
   constructor() {
     super();
@@ -56,6 +57,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     } else if(stdout.includes('4056x3040')) {
       console.log("We're a raspi HQ!");
       this.myCamera = ConnectedCamera.RaspiHQ;
+      this._myMode = 3;
       this._maxExposureUs = 22.5 * 1000000; // empirically, I like it better if it's limited to 22.5 seconds - the bigger lens available on the HQ camera means we collect a lot of light.
     } else {
       console.log("We can't identify our camera type from " + stdout);
@@ -110,7 +112,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     fs.writeFileSync('./last-exposure.json', JSON.stringify(saveThis));
 
     return new Promise((resolve, reject) => {
-      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md 4 -n -o ./tmp/from-camera.jpg`;
+      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md ${this._myMode} -n -o ./tmp/from-camera.jpg`;
       console.log("running camera command ", cameraCommand);
       exec(cameraCommand, (err, stdout, stderr) => {
         if(err) {
