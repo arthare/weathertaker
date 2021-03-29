@@ -171,6 +171,7 @@ export function takePictureLoop() {
     console.log(elapsed(), mySubmitCount, "image captured and processed");
     const url = getApiUrl('image-submission');
 
+    fs.writeFile('./tmp/last-image.jpg', data, ()=>{});
     
 
     submitPromise = submitPromise.then(async () => {

@@ -11,7 +11,7 @@ export function setupLocalApi() {
     takeImageAsap();
 
     try {
-      const file = process.cwd() + '/tmp/from-camera.jpg';
+      const file = process.cwd() + '/tmp/last-image.jpg';
       console.log("sending file ", file);
       res.sendFile(file);
     } catch(e) {
