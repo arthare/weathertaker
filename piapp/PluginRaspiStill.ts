@@ -85,6 +85,12 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
 
   static available() {
     const ret = spawnSync('raspistill', []);
+
+    try {
+      const v4l2 = execSync(`v4l2-ctl --list-framesizes=YU12`);
+    } catch(e) {
+      return false;
+    }
     return !ret.error;
   }
 
