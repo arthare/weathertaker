@@ -117,7 +117,7 @@ export default class Db {
             if(err) {
               reject(err);
             } else {
-              console.log("inserted image ", insertResult?.insertId, " with size ", imageSubmissionRequest.imageBase64.length);
+              console.log("inserted image ", insertResult?.insertId, " from localip ", imageSubmissionRequest.localIp, " with size ", imageSubmissionRequest.imageBase64.length);
               const newFilename = `${process.cwd()}/images/${sourceInfo.handle}/${insertResult.insertId}.jpg`;
               fs.renameSync(filename, newFilename);
               db.execute('update images set filename=? where id=?', [newFilename, insertResult.insertId], (err, renameResult:any) => {

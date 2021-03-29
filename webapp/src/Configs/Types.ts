@@ -25,6 +25,7 @@ export interface GetConfigResponse {
 
 export interface ImageSubmissionRequest extends SecureRequest {
   imageBase64:string;
+  localIp:string;
 }
 
 export enum ReactionType {
