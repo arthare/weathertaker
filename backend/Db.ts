@@ -336,7 +336,7 @@ export default class Db {
       return new Promise<SourceInfo>((resolve, reject) => {
 
         const msInDay = 24*3600*1000;
-        const tmStart = new Date().getTime() - 7*msInDay;
+        const tmStart = new Date().getTime() - 0.5*msInDay; // only show "next sources" that have updated in the last 12 hours
         db.execute(`select sources.id from videos,sources where videos.removed=0 and videos.sourceid=sources.id and videos.tmStart > ? group by sources.id order by sources.handle`, [tmStart/1000], (err, results:any[]) => {
           if(err) {
             reject(err);
