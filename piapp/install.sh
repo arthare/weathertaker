@@ -1,11 +1,15 @@
+source env-vars
+
+
 echo "Installing imagemagick"
+
 sudo apt-get update
 sudo apt-get install imagemagick -y
 
 sudo apt-get install fswebcam -y
 
 curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
-sudo apt install nodejs -y
+sudo apt-get install nodejs -y
 
 echo "Installing gphoto2"
 sudo apt-get install gphoto2 -y
