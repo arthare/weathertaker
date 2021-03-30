@@ -14,9 +14,8 @@ echo "Installing node-canvas dependencies"
 sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev -y
 sudo npm install -g typescript@3.7.4
 sudo npm install -g pm2@4.4.1
+sudo npm install -g npm-install-missing
 git pull origin master
-
-npm install
 
 pm2 startup
 

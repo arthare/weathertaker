@@ -1,10 +1,10 @@
 ./install.sh
-npm install
+npm-install-missing
 
 
 pushd .
 cd ../webapp
-npm install
+npm-install-missing
 popd
 
 mkdir -p ./tmp
