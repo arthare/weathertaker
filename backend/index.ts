@@ -6,7 +6,7 @@ import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
 import { resolveNaptr } from 'dns';
-import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
+import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
 
 
 let app = <core.Express>express();
@@ -177,9 +177,9 @@ app.post('/image-submission', (req:core.Request, res:core.Response) => {
     } else {
       image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
     }
-    if(image.height !== IMAGE_SUBMISSION_HEIGHT) {
+    if(image.height !== IMAGE_SUBMISSION_HEIGHT && image.width !== IMAGE_SUBMISSION_WIDTH) {
       debugger; // hey developer, something messed up!
-      throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high.  It's the browser-app's fault if not.`);
+      throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high but it was ${image.width} x ${image.height} It's the browser-app's fault if not.`);
     }
     return Db.imageSubmission(query).then(async (submit) => {
       const source = await Db.validateApiKey(query.apiKey);
