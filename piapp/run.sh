@@ -1,12 +1,11 @@
 source env-vars
 
 ./install.sh
-npm-install-missing
-
+npm install
 
 pushd .
 cd ../webapp
-npm-install-missing
+npm install
 popd
 
 mkdir -p ./tmp
