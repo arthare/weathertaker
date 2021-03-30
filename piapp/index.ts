@@ -24,7 +24,6 @@ import {takePictureLoop} from './index-pictureloop';
 
 
 
-setupLocalApi();
 
 try {
   fs.mkdirSync('./tmp');
@@ -42,6 +41,7 @@ if(process.argv.find((arg) => arg === 'watchdog')) {
   runTestImages();
 } else {
 
+  setupLocalApi();
   takePictureLoop();
 
 }

@@ -17,7 +17,6 @@ import {prepareCameraPlugins} from './PluginFactory';
 import { CameraPlugin } from './Plugin';
 import {Canvas, Image} from 'canvas';
 import SunCalc from 'suncalc';
-import {setupLocalApi} from './index-webserver';
 import { isPowerfulPi } from './PluginUtils';
 
 
