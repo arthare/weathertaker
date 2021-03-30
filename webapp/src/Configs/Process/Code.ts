@@ -24,6 +24,7 @@ export function apply(input:Canvas, models:any):Canvas {
       middle: 128,
       minStretchSpan: 80,
     },
+    do:true,
   }
 
   for(var key in defaultModel) {
@@ -42,19 +43,16 @@ export function apply(input:Canvas, models:any):Canvas {
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
     finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
-    console.log("processing with pctDay and finalModel = ", pctDay, finalModel);
   }
 
   const peakHistoBrightness = 256;
   const basicStats = getMeanBrightness(input);
 
   const histoResult = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStats.histo);
-  console.log(elapsed(), "histoResult = ", histoResult);
 
   const data = ctx.getImageData(0,0,input.width, input.height);
   const pixels = data.data;
 
-  console.log(elapsed(), "about to level");
   let span = histoResult.high - histoResult.low;
 
   const MIN_SPAN = finalModel.minStretchSpan;

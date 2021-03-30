@@ -40,7 +40,7 @@ const defaultCameraModel = {
   desiredPhotoPeriodMs: DEFAULT_IMAGE_CADENCE_MS,
 }
 
-let g_currentModels = {
+let g_currentModels:any = {
   Camera: defaultCameraModel,
 }; // the configured models from the database.  Gets updated on each image submission
 
@@ -141,13 +141,11 @@ async function captureAndProcessOneImage():Promise<Buffer> {
   
   checkSaveRawImage(exposure.image);
   
-  console.log(elapsed(), "picture taken, doing processing");
   const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image());
-  console.log("canvas prepared");
 
   await exposure.exposer.analyzeRawImage(canvas);
   let processedImage:Canvas;
-  if(isPowerfulPi()) {
+  if(isPowerfulPi() && g_currentModels?.Process?.do) {
     processedImage = await ImageEffects.process(canvas, g_currentModels);
   } else {
     // no processing on Pi zero's!
@@ -155,7 +153,6 @@ async function captureAndProcessOneImage():Promise<Buffer> {
   }
   
   const compressedImage = processedImage.toBuffer("image/jpeg", {quality: 90});
-  console.log(elapsed(), "processing complete, and produced a ", compressedImage.byteLength, "-byte image");
   return compressedImage;
 }
 
@@ -176,16 +173,14 @@ export function takePictureLoop() {
   const tmNext = tmStart + g_currentModels['Camera'].desiredPhotoPeriodMs;
   return captureAndProcessOneImage().then(async (data:Buffer) => {
     
-    console.log(elapsed(), mySubmitCount, "image captured and processed");
     const url = getApiUrl('image-submission');
 
+    // saves so that index-webserver can expose it
     fs.writeFile('./tmp/last-image.jpg', data, ()=>{});
     
 
     submitPromise = submitPromise.then(async () => {
-      console.log(elapsed(), mySubmitCount, "About to encode base64 string from image");
       const base64 = data.toString('base64');
-      console.log(elapsed(), mySubmitCount, `Encoded ${base64.length}-char base64 string from image`);
       const request:ImageSubmissionRequest = {
         apiKey: config.apiKey,
         imageBase64: base64,
@@ -193,10 +188,8 @@ export function takePictureLoop() {
       }
 
       const currentSunAngle = getCurrentSunAngle(g_currentModels);
-      console.log("Current sun angle is ", currentSunAngle);
       if(currentSunAngle < g_currentModels.Camera.minSunAngle) {
         // you said to not do sun angles less than this!
-        console.log("Skipping posting because sun angle not high enough.  Sun angle is ", currentSunAngle.toFixed(1), " limit is ", g_currentModels.Camera.minSunAngle);
         return Promise.resolve();
       }
 

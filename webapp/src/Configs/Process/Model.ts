@@ -7,4 +7,5 @@ export interface HistogramProcessRules {
 export interface ProcessModel {
   day: HistogramProcessRules;
   night: HistogramProcessRules;
+  do:boolean;
 }

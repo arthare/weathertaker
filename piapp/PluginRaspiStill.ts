@@ -68,7 +68,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     try {
       const lastExposure:any = fs.readFileSync('./last-exposure.json', 'utf8');
       const tmNow = new Date().getTime();
-      if(tmNow - lastExposure.tmNow < 10 * 60000) {
+      if(tmNow - lastExposure.tmNow < 20 * 60000) {
         console.log("Been less than 10 minutes since our last exposure, so let's use this data ", lastExposure);
         for(var key in lastExposure) {
           if(typeof(lastExposure[key]) === 'number') {
@@ -106,7 +106,6 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     const exposeUs = roundToShutterMultiple(targetUs);
     console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + targetIso + " ISO");
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
-    console.log(elapsed(), "about to take picture");
 
     let saveThis:any = {};
     for(var key in this) {
@@ -124,7 +123,6 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
         if(err) {
           return reject(err);
         }
-        console.log(elapsed(), "took picture");
   
         //execSync(`convert ./tmp/from-camera.jpg -resize ${IMAGE_SUBMISSION_WIDTH}x${IMAGE_SUBMISSION_HEIGHT} -quality 99% ./tmp/922p.jpg`);
         //console.log(elapsed(), "done writing to disk");

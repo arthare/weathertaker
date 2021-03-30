@@ -171,7 +171,6 @@ export class ImageEffects {
         pctDay = (angleDegrees - fullNight) / (fullDay - fullNight);
         pctDay = Math.max(0.0, pctDay);
         pctDay = Math.min(1.0, pctDay);
-        console.log(`Processing: Because we have latlng ${latLng.lat.toFixed(2)}, ${latLng.lng.toFixed(2)} and sun angle ${angleDegrees.toFixed(1)} deg, we are ${(pctDay*100).toFixed(0)}% daytime`);
       }
       
       currentModels['CurrentTime'] = {
@@ -180,14 +179,12 @@ export class ImageEffects {
       }
     }
 
-    console.log("model for image: ", currentModels);
     // ok, we've got our image!  let's run it through the pipeline!
     const pipeline = [
       processApply,
     ]
 
     pipeline.forEach((pipe, index) => {
-      console.log(elapsed(), "Applying pipeline ", index, " / ", pipeline.length);
       pipe(canvas, currentModels);
     })
 
