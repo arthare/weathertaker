@@ -1,5 +1,7 @@
 import { Canvas } from 'canvas';
+import { execSync } from 'child_process';
 import fs from 'fs';
+import { platform } from 'os';
 import { CameraModel } from '../webapp/src/Configs/Camera/Model';
 import { elapsed, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { CameraPlugin } from './Plugin';
@@ -171,4 +173,26 @@ export function readFromCamera(file:string, resolve:(buf:Buffer)=>void, reject:(
     resolve(data);
   });
 
+}
+
+let g_isPowerfulPi = undefined;
+export function isPowerfulPi() {
+  if(platform() === 'win32') {
+    console.log("we're on windows, so we're powerful");
+    return true;
+  }
+  if(g_isPowerfulPi === undefined) {
+    // haven't figured it out yet
+    const ex = execSync('cat /sys/firmware/devicetree/base/model');
+    const res = ex.toString();
+    if(res.includes('Raspberry Pi 4')) {
+      g_isPowerfulPi = true;
+    } else {
+      g_isPowerfulPi = false;
+    }
+  } else {
+    // have figured this out in the past
+    console.log("is powerful pi? ", g_isPowerfulPi);
+    return g_isPowerfulPi;
+  }
 }

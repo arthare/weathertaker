@@ -15,7 +15,7 @@ import {runTestImages} from './index-testImages';
 import {runWatchdog} from './index-watchdog';
 import {prepareCameraPlugins} from './PluginFactory';
 import { CameraPlugin } from './Plugin';
-import {Image} from 'canvas';
+import {Canvas, Image} from 'canvas';
 import SunCalc from 'suncalc';
 import {setupLocalApi} from './index-webserver';
 
@@ -145,7 +145,14 @@ async function captureAndProcessOneImage():Promise<Buffer> {
   console.log("canvas prepared");
 
   await exposure.exposer.analyzeRawImage(canvas);
-  const processedImage = await ImageEffects.process(canvas, g_currentModels);
+  let processedImage:Canvas;
+  if(isPowerfulPi()) {
+    processedImage = await ImageEffects.process(canvas, g_currentModels);
+  } else {
+    // no processing on Pi zero's!
+    processedImage = canvas;
+  }
+  
   const compressedImage = processedImage.toBuffer("image/jpeg", {quality: 90});
   console.log(elapsed(), "processing complete, and produced a ", compressedImage.byteLength, "-byte image");
   return compressedImage;
