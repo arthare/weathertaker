@@ -6,9 +6,6 @@ import { cwd } from 'process';
 import { v4 as uuidv4 } from 'uuid';
 import Db, { InsertVideo, SourceInfo, VideoInfo } from './Db';
 import { guaranteePath } from './FsUtils';
-const ffmpeg = require("ffmpeg-cli");
-ffmpeg.run("-version");
-console.log(ffmpeg.runSync("-version"));
 
 let working = false;
 
@@ -119,7 +116,14 @@ async function generateVideoFor(sourceId:number):Promise<any> {
       const outFileName = uuidv4();
       const videoPath = `${cwd()}/videos/${sourceInfo.handle}/${outFileName}.mp4`;
       guaranteePath(videoPath);
-      let finalCommand = `cat ${imageList.join(' ')} | ffmpeg -f image2pipe -i - -c:v libx264 -pix_fmt yuv420p ${videoPath}`;
+
+
+      const imageListFormatted = imageList.map((img) => {
+        return `file '${img}'`;
+      })
+      fs.writeFileSync('./video-paths.txt', imageListFormatted.join('\n'));
+
+      let finalCommand = `ffmpeg -f concat -safe 0 -i ./video-paths.txt -c:v libx264 -pix_fmt yuv420p ${videoPath}`;
       
       if(platform() === 'win32') {
         finalCommand = finalCommand.replace(/\\/gi, '/');
