@@ -5,10 +5,12 @@ export class CameraModel {
     this.desiredH = 720;
     this.desiredPhotoPeriodMs = 20000;
     this.minSunAngle = -90;
+    this.extraParams = '';
   }
 
   desiredW:number;
   desiredH:number;
   desiredPhotoPeriodMs:number;
   minSunAngle:number;
+  extraParams:string;
 }

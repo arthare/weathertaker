@@ -37,6 +37,7 @@ const defaultCameraModel = {
   desiredH: 720,
   minSunAngle: -90,
   desiredPhotoPeriodMs: DEFAULT_IMAGE_CADENCE_MS,
+  extraParams: '',
 }
 
 let g_currentModels:any = {

@@ -117,7 +117,7 @@ export class RaspiStill extends ExposureAdjustingCamera implements CameraPlugin 
     fs.writeFileSync('./last-exposure.json', JSON.stringify(saveThis));
 
     return new Promise((resolve, reject) => {
-      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} -w 1640 -h 1232 -bm -drc off -ex off -md ${this._myMode} -n -o ./tmp/from-camera.jpg`;
+      const cameraCommand = `raspistill --timeout 1 -awb sun -ISO ${targetIso} -ss ${exposeUs} ${(cameraModel?.extraParams) || ''} -w 1640 -h 1232 -bm -drc off -ex off -md ${this._myMode} -n -o ./tmp/from-camera.jpg`;
       console.log("running camera command ", cameraCommand);
       exec(cameraCommand, (err, stdout, stderr) => {
         if(err) {
