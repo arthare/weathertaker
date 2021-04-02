@@ -4,3 +4,4 @@ tmp
 photos
 db-config.*
 config.json
+last-model.json

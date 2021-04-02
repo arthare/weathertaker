@@ -44,6 +44,13 @@ let g_currentModels:any = {
   Camera: defaultCameraModel,
 }; // the configured models from the database.  Gets updated on each image submission
 
+try {
+  g_currentModels = JSON.parse(fs.readFileSync('./last-model.json', 'utf8'));
+} catch(e) {
+  // that's fine, we'll just use the defaultiest default
+}
+
+
 try {  
   config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
 } catch(e) {
@@ -208,6 +215,7 @@ export function takePictureLoop() {
           console.log(elapsed(), mySubmitCount, "posted successfully!");
           return response.json().then((response) => {
             g_currentModels = response?.models || {};
+            fs.writeFileSync('./last-model.json', JSON.stringify(response));
             console.log("new model from web: ", JSON.stringify(response, undefined, '\t'));
             
             let cameraConfig:CameraModel = g_currentModels['Camera'];
