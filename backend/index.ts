@@ -166,28 +166,33 @@ app.get('/recent-raw-file', (req:core.Request, res:core.Response) => {
 app.post('/image-submission', (req:core.Request, res:core.Response) => {
   setCorsHeaders(req, res);
   return postStartup(req,res).then(async (query:ImageSubmissionRequest) => {
-
-    // let's validate this image
-    let image;
-    if(query.imageBase64.startsWith('data:image')) {
-      // good, that saves us reformatting it.
-      image = await Image.load(query.imageBase64);
-      // but now we have to slice off the pre-comma bits.
-      query.imageBase64 = query.imageBase64.slice(query.imageBase64.indexOf(',')+1);
-    } else {
-      image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
-    }
-    if(image.height !== IMAGE_SUBMISSION_HEIGHT && image.width !== IMAGE_SUBMISSION_WIDTH) {
-      debugger; // hey developer, something messed up!
-      throw new Error(`Image needs to be ${IMAGE_SUBMISSION_HEIGHT} pixels high but it was ${image.width} x ${image.height} It's the browser-app's fault if not.`);
-    }
-    return Db.imageSubmission(query).then(async (submit) => {
+    try {
       const source = await Db.validateApiKey(query.apiKey);
-      return {
-        submit,
-        models: await Db.getCurrentModels(source.id),
+      
+      // let's validate this image
+      let image;
+      if(query.imageBase64.startsWith('data:image')) {
+        // good, that saves us reformatting it.
+        image = await Image.load(query.imageBase64);
+        // but now we have to slice off the pre-comma bits.
+        query.imageBase64 = query.imageBase64.slice(query.imageBase64.indexOf(',')+1);
+      } else {
+        image = await Image.load(`data:image/jpeg;base64,${query.imageBase64}`);
       }
-    });
+      if(image.height !== IMAGE_SUBMISSION_HEIGHT && image.width !== IMAGE_SUBMISSION_WIDTH) {
+        debugger; // hey developer, something messed up!
+        throw new Error(`Image from ${source.name} / ${source.id} needs to be ${IMAGE_SUBMISSION_WIDTH} x ${IMAGE_SUBMISSION_HEIGHT} pixels but it was ${image.width} x ${image.height}`);
+      }
+      return Db.imageSubmission(query).then(async (submit) => {
+        return {
+          submit,
+          models: await Db.getCurrentModels(source.id),
+        }
+      });
+
+    } catch(e) {
+
+    }
   }).then(handleSuccess(req,res), (failure) => {
     console.log("image-submission failure: ", failure && failure.message);
     handleFailure(req,res)(failure);
