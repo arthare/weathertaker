@@ -38,16 +38,21 @@ const defaultCameraModel = {
   minSunAngle: -90,
   desiredPhotoPeriodMs: DEFAULT_IMAGE_CADENCE_MS,
   extraParams: '',
-}
+} as CameraModel;
 
-let g_currentModels:any = {
+const defaultModel = {
   Camera: defaultCameraModel,
 }; // the configured models from the database.  Gets updated on each image submission
+let g_currentModels:any = defaultModel;
 
 try {
   g_currentModels = JSON.parse(fs.readFileSync('./last-model.json', 'utf8'));
+  if(!g_currentModels || !g_currentModels['Camera']) {
+    g_currentModels = defaultModel;
+  }
 } catch(e) {
   // that's fine, we'll just use the defaultiest default
+  g_currentModels = defaultModel;
 }
 
 
