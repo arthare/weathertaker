@@ -218,6 +218,7 @@ export function takePictureLoop() {
           throw response;
         } else {
           console.log(elapsed(), mySubmitCount, "posted successfully!");
+          fs.writeFileSync('./tmp/internet-sends.txt', '' + mySubmitCount);
           return response.json().then((response) => {
             g_currentModels = response?.models || {};
             fs.writeFileSync('./last-model.json', JSON.stringify(response));

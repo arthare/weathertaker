@@ -8,9 +8,16 @@ export async function runWatchdog() {
   // this simple process can reboot the pi and we'll only miss a couple minutes of photos.
 
   let rebootTimeout;
+  let rebootBecauseInternetTimeout;
   function resetTimeout() {
     clearTimeout(rebootTimeout);
     rebootTimeout = setTimeout(() => {
+      execSync('sudo reboot');
+    }, 5*60000);
+  }
+  function resetInternetTimeout() {
+    clearTimeout(rebootBecauseInternetTimeout);
+    rebootBecauseInternetTimeout = setTimeout(() => {
       execSync('sudo reboot');
     }, 5*60000);
   }
@@ -19,8 +26,16 @@ export async function runWatchdog() {
     persistent: true,
     interval: 250,
   }, (curr:fs.Stats, prev:fs.Stats) => {
-    console.log("the file changed!", curr, prev);
+    console.log("from-camera changed!", curr, prev);
     resetTimeout();
   })
+  fs.watchFile('./tmp/internet-sends.txt', {
+    persistent: true,
+    interval: 250,
+  }, (curr:fs.Stats, prev:fs.Stats) => {
+    console.log("internet-sends changed!", curr, prev);
+    resetInternetTimeout();
+  })
   console.log("set up watcher for ./tmp/from-camera.jpg");
+  console.log("set up watcher for ./tmp/internet-sends.jpg");
 }
