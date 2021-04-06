@@ -84,6 +84,8 @@ const PageIndex = () => {
   }, []);
 
   useEffect(() => {
+    let handleToFetch = (sourceResponse?.handle) || params.handle;
+    console.log("reloads = ", reloads, ": fetching video uuid for ", handleToFetch);
     fetch(`${videoMetaUrl}?sourceHandle=${params.handle || ''}`).then((response) => response.json()).then((response) => {
 
       fetch(`${sourceMetaUrl}?id=${response.sourceId}`).then((r) => r.json()).then((source) => {
@@ -91,7 +93,7 @@ const PageIndex = () => {
       })
 
       const newVideoUrl = `http://fastsky.ca/videos/${response.handle}/${response.filename}`;
-      console.log("new video url = ", newVideoUrl);
+      console.log("new video url for ", response, " is ", newVideoUrl);
       setVideoUrl(newVideoUrl);
       setVideoResponse(response);
       setTimeout(() => {
@@ -169,10 +171,8 @@ const PageIndex = () => {
   }
 
   const onError = (e:any) => {
-    console.log("oh no, an error: ", e);
-    fetch(videoMetaUrl).then((response) => response.json()).then((response) => {
-      setVideoUrl(`http://fastsky.ca/videos/${response.handle}/${response.filename}`);
-    })
+    console.log("error: ", e?.message, e);
+    setReloads(reloads+1);
   }
 
   const onReact = (how:any) => {
@@ -304,7 +304,7 @@ const PageIndex = () => {
             {reactionCount && (<div className="Index__Video-Reaction--Count">{reactionCount.wow || '0'}</div>)}
           </i>
         </div>
-        <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); doSizeCheck(); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onAbort={onError} onError={onError}></video>
+        <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); doSizeCheck(); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onError={onError}></video>
         {lastImageDataUri && (
           <div className="Index__Video-LastImageModal">
             <img className="Index__Video-LastImage" src={lastImageDataUri}></img>
