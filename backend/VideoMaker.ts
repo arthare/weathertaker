@@ -68,7 +68,6 @@ async function cleanupOldVideos() {
             if(videoIsLeader ||
                videoIsRecent ||
                videoIsReactedTo) {
-              console.log(`Video ${file} gets to live because it is leader ${!!videoIsLeader}, recent ${!!videoIsRecent}, or reactedto ${videoIsReactedTo}`);
             } else {
               console.log(`queuing ${file} for deletion because it is not leader, recent, or reacted-to`);
               removedFiles.push(fullPath);
@@ -205,7 +204,6 @@ async function checkForWork() {
 }
 
 export function notifyDirtySource(sourceId:number) {
-  console.log(`marked ${sourceId} as dirty`);
   g_staleCount[sourceId] = Math.max(1, g_staleCount[sourceId] || 0);
 }
 

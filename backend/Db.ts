@@ -117,7 +117,7 @@ export default class Db {
             if(err) {
               reject(err);
             } else {
-              console.log("inserted image ", insertResult?.insertId, " from localip ", imageSubmissionRequest.localIp, " with size ", imageSubmissionRequest.imageBase64.length);
+              console.log(`inserted image ${insertResult?.insertId} from localip ${(imageSubmissionRequest.localIp || '').trim()} into source ${sourceInfo.handle} / ${sourceInfo.id} with size ${imageSubmissionRequest.imageBase64.length}`);
               const newFilename = `${process.cwd()}/images/${sourceInfo.handle}/${insertResult.insertId}.jpg`;
               fs.renameSync(filename, newFilename);
               db.execute('update images set filename=? where id=?', [newFilename, insertResult.insertId], (err, renameResult:any) => {
@@ -196,7 +196,7 @@ export default class Db {
   static async insertVideo(createdVideo:InsertVideo):Promise<number> {
     const videoId = await Db.createVideoId(createdVideo.sourceId, createdVideo.filename, createdVideo.tmStart, createdVideo.tmEnd);
 
-    console.log("inserting video with metadata: ", createdVideo);
+    console.log(`inserting video ${createdVideo.filename} for source #${createdVideo.sourceId} with ${createdVideo.imageIds.length} frames`);
     await Db.createVideoImages(videoId, createdVideo.imageIds);
 
     return videoId;
@@ -206,17 +206,20 @@ export default class Db {
       return new Promise<ImageInfo[]>((resolve, reject) => {
         const msStart = tmNow - spanSeconds*1000;
         const unixStart = msStart / 1000;
-        db.execute('select id,filename,unixtime from images where sourceid=? and unixtime>? order by unixtime asc', [sourceId, unixStart], (err, result:any[]) => {
+        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 600', [sourceId, unixStart], (err, result:any[]) => {
           if(err) {
             reject(err);
           } else {
-            resolve(result.map((res) => {
-              return {
-                filename: res.filename,
-                tmTaken: res.unixtime*1000,
-                id: res.id,
-              }
-            }));
+
+            if(result.length > 0) {
+              resolve(result.map((res) => {
+                return {
+                  filename: res.filename,
+                  tmTaken: res.unixtime*1000,
+                  id: res.id,
+                }
+              }));
+            }
           }
         })
       }).finally(() => db.end());
@@ -496,7 +499,6 @@ export default class Db {
     // then we want to find all the reactions applied to any of those videoids:
     //   SQL: (select count(id) as total, reactions.reactionid from reactions where reactions.videoid in (select videos.id from videos,images_in_videos where images_in_videos.videoid=videos.id and images_in_videos.imageid in (select images_in_videos.imageid from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id) group by videos.id) group by reactions.reactionid)
 
-    console.log("getting reaction counts for " + videoId);
     return getDb().then((db) => {
       return new Promise<{[key:number]:number}>((resolve, reject) => {
         db.execute(`SELECT 
@@ -524,7 +526,7 @@ export default class Db {
                               GROUP BY videos.id)
                       GROUP BY reactions.reactionid`, [videoId], (err, results:any[]) => {
           if(err) {
-            console.log("failed to get reaction counts");
+            console.log("failed to get reaction counts", err);
             reject(err);
           } else {
             let ret:{[key:string]:number} = {};
@@ -544,14 +546,13 @@ export default class Db {
       return new Promise<{[key:number]:number}>((resolve, reject) => {
         db.execute('select videoid, videos.filename, count(reactions.id) from reactions, videos where reactions.videoid = videos.id and videos.removed=0 and reactions.tm > unix_timestamp() - 3600*24*30 group by videos.id', [], (err, results:any[]) => {
           if(err) {
-            console.log("failed to get reaction counts");
+            console.log("failed to get reaction counts", err);
             reject(err);
           } else {
             let ret:{[key:number]:number} = {};
             results.forEach((result) => {
               ret[result.videoid] = (ret[result.videoid] || 0) + 1;
             });
-            console.log("reaction counts for non-removed videos: ", ret);
             resolve(ret);
           }
         })
