@@ -204,14 +204,16 @@ export default class Db {
   static getRecentImages(tmNow:number, spanSeconds:number, sourceId:number):Promise<ImageInfo[]> {
     return getDb().then((db) => {
       return new Promise<ImageInfo[]>((resolve, reject) => {
-        const msStart = tmNow - spanSeconds*1000;
-        const unixStart = msStart / 1000;
-        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 600', [sourceId, unixStart], (err, result:any[]) => {
+        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 600', [sourceId], (err, result:any[]) => {
           if(err) {
+            console.error("getRecentImages error", err);
             reject(err);
           } else {
 
             if(result.length > 0) {
+              console.log("getRecentImages: Found " + result.length + " images");
+
+              result.sort((a, b) => a.unixtime < b.unixtime ? -1 : 1); // sort so oldest goes first
               resolve(result.map((res) => {
                 return {
                   filename: res.filename,
@@ -219,6 +221,8 @@ export default class Db {
                   id: res.id,
                 }
               }));
+            } else {
+              resolve([]);
             }
           }
         })

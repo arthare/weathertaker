@@ -129,7 +129,12 @@ async function generateVideoFor(sourceId:number):Promise<any> {
       }
   
       console.log("command\n\n", finalCommand);
+      const tmStart = new Date().getTime();
       exec(finalCommand, (err, stdout, stderr) => {
+        const tmDone = new Date().getTime();
+        const seconds = ((tmDone - tmStart) / 1000);
+        const fps = imageList.length / seconds;
+        console.log(`Took ${seconds.toFixed(1)}s to build ${imageList.length}-frame video ${fps.toFixed(2)}fps`);
         if(err) {
           debugger;
           reject(err);
@@ -205,6 +210,7 @@ async function checkForWork() {
 
 export function notifyDirtySource(sourceId:number) {
   g_staleCount[sourceId] = Math.max(1, g_staleCount[sourceId] || 0);
+  console.log("stalecount now: ", g_staleCount);
 }
 
 export function initVideoMaker() {
