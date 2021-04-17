@@ -20,6 +20,25 @@ export function markSourceStale(sourceId:number) {
   g_staleCount[sourceId] = Math.max(g_staleCount[sourceId] || 0, 1);
 }
 
+async function removeFileList(list:string[]):Promise<any> {
+
+  let size = 0;
+  function removeSingleFile(file:string):Promise<any> {
+    return new Promise<any>((resolve) => {
+      size += fs.statSync(file).size;
+      fs.unlink(file, resolve);
+    })
+  }
+
+  // ok, time to actually remove all these files...
+  const proms = list.map(async (file) => {
+    return removeSingleFile(file);
+  });
+  return Promise.all(proms).finally(() => {
+    console.log("removeFileList: removed " + ((size / (1024*1024))).toFixed(1) + "mb in " + list.length + " files");
+  })
+}
+
 async function cleanupOldVideos() {
   const activeVideos:VideoInfo[] = await Db.getActiveVideoInfos();
   const allHandles = fs.readdirSync(`${cwd()}/videos/`);
@@ -77,13 +96,47 @@ async function cleanupOldVideos() {
       })
     }
   });
-
-  // ok, time to actually remove all these files...
-  removedFiles.forEach(async (file) => {
-    console.log("unlinking ", file);
-    fs.unlinkSync(file);
-  });
+  
+  await removeFileList(removedFiles);
   await Db.checkRemovedVideos();
+}
+
+async function cleanupOldImages():Promise<any> {
+  const tmNow = new Date().getTime();
+  const sources = await Db.getAllSources();
+
+  let filesToDelete:string[] = [];
+  for(var x = 0;x < sources.length; x++) {
+    const source = sources[x];
+    const imagesToKeep = await Db.getRecentImages(tmNow, 0, source.id);
+    const setKeep = new Set(imagesToKeep.map((i) => i.filename));
+
+    // ok, we've got all the images that would be used in a fresh video.  We'll not delete those, but we can delete every single other one
+    const imageDir = `${cwd()}/images/${source.handle}/`;
+    try {
+      const imagesOnDisk = fs.readdirSync(imageDir);
+      imagesOnDisk.forEach((imgName) => {
+        if(imgName.startsWith('raw-')) {
+          // this is one of the raw samples.  we'll leave it
+          return;
+        }
+        const imgPath = imageDir + imgName;
+        
+        if(!setKeep.has(imgPath)) {
+          console.log("I should delete ", imgPath, " because it isn't in setKeep");
+          filesToDelete.push(imgPath);
+        }
+      })
+    } catch(e) {
+      // whatever, I guess
+      if(e.code === 'ENOENT') {
+        // don't even bother logging this, it's fine
+      } else {
+        console.error(`Couldn't scan ${source.handle}'s image dir for images to delete`, e);
+      }
+    }
+  }
+  await removeFileList(filesToDelete);
 }
 
 async function generateVideoFor(sourceId:number):Promise<any> {
@@ -153,6 +206,7 @@ async function generateVideoFor(sourceId:number):Promise<any> {
     await Db.insertVideo(createdVideo);
 
     await cleanupOldVideos();
+    await cleanupOldImages();
   }
 
 }
@@ -220,4 +274,5 @@ export function initVideoMaker() {
 
   checkForWork();
   cleanupOldVideos();
+  cleanupOldImages();
 }

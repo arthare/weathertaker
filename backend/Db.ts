@@ -60,6 +60,21 @@ function getPathToVideo(videoInfo:VideoInfo) {
 
 export default class Db {
 
+  static getAllSources():Promise<SourceInfo[]> {
+    return getDb().then((db) => {
+      return new Promise<SourceInfo[]>((resolve, reject) => {
+        db.execute(`select id,handle,name,description from sources`, [], (err, results:any[]) => {
+          if(err) {
+            reject(err);
+          } else {
+            resolve(results);
+          }
+        })
+      }).finally(() => {
+        db.end();
+      })
+    })
+  }
   static getSourceInfo(sourceId:number):Promise<SourceInfo> {
     console.log("they're asking for source info from ", sourceId);
     return getDb().then((db) => {
