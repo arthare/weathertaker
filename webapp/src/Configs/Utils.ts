@@ -25,7 +25,7 @@ export function getHistogram(canvas:Canvas):number[] {
 
   let pixelsChecked = 0;
 
-  for(var ixRow = 0; ixRow < canvas.height; ixRow++) {
+  for(var ixRow = 0; ixRow < canvas.height / 2; ixRow++) {
     const ixStart = ixRow * bytesPerRow;
     const pctRow = ixRow / canvas.height;
     
