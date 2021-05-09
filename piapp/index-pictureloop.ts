@@ -38,6 +38,7 @@ const defaultCameraModel = {
   minSunAngle: -90,
   desiredPhotoPeriodMs: DEFAULT_IMAGE_CADENCE_MS,
   extraParams: '',
+  targetedMeanBrightness: (0.55*256),
 } as CameraModel;
 
 const defaultModel = {
@@ -155,7 +156,7 @@ async function captureAndProcessOneImage():Promise<Buffer> {
   
   const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image());
 
-  await exposure.exposer.analyzeRawImage(canvas);
+  await exposure.exposer.analyzeRawImage(g_currentModels['Camera'] || defaultCameraModel, canvas);
   let processedImage:Canvas;
   if(isPowerfulPi() && g_currentModels?.Process?.do) {
     processedImage = await ImageEffects.process(canvas, g_currentModels);

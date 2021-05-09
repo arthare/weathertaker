@@ -74,13 +74,13 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
     
   }
 
-  async analyzeRawImage(image:Canvas):Promise<void> {
+  async analyzeRawImage(cameraModel:CameraModel, image:Canvas):Promise<void> {
 
     const peakHistoBrightness = 256;
     const basicStats = getMeanBrightness(image);
     
     const mean = basicStats.mean;
-    const targetMean = peakHistoBrightness * 0.55;
+    const targetMean = cameraModel.targetedMeanBrightness || (0.55 * peakHistoBrightness);
     const multiplyToGetToTarget = targetMean / mean;
 
     console.log(elapsed(), "Mean brightness: ", mean, " target: ", targetMean);

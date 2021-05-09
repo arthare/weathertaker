@@ -9,10 +9,6 @@ export function prepareCameraPlugins():CameraPlugin[] {
     ret.push(new RaspiStill())
   }
 
-  if(FsWebcamPlugin.available()) {
-    ret.push(new FsWebcamPlugin());
-  }
-
   if(GPhotoPlugin.available()) {
     ret.push(new GPhotoPlugin());
   }

@@ -24,7 +24,7 @@ export class FsWebcamPlugin implements CameraPlugin {
       })
     })
   }
-  analyzeRawImage(image: Canvas): Promise<void> {
+  analyzeRawImage(cameraModel:CameraModel, image: Canvas): Promise<void> {
     // fswebcam doesn't look back.
     return Promise.resolve();
   }

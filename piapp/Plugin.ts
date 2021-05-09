@@ -3,5 +3,5 @@ import { CameraModel } from "../webapp/src/Configs/Camera/Model";
 
 export interface CameraPlugin {
   takePhoto(cameraModel:CameraModel):Promise<Buffer>;
-  analyzeRawImage(image:Canvas):Promise<void>;
+  analyzeRawImage(cameraModel:CameraModel, image:Canvas):Promise<void>;
 }
