@@ -1,3 +1,5 @@
+import { Rect } from "../Utils";
+
 export class CameraModel {
 
   constructor() {
@@ -7,6 +9,7 @@ export class CameraModel {
     this.minSunAngle = -90;
     this.extraParams = '';
     this.targetedMeanBrightness = 140;
+    this.rcExposure = null;
   }
 
   desiredW:number;
@@ -15,4 +18,5 @@ export class CameraModel {
   minSunAngle:number;
   extraParams:string;
   targetedMeanBrightness:number;
+  rcExposure: Rect| null;
 }

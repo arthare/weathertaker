@@ -7,6 +7,57 @@ export function testAssert(f:any, reason?:string) {
     debugger;
   }
 }
+
+export interface Rect {
+  left:number;
+  top:number;
+  right:number;
+  bottom:number;
+}
+
+export function getHistogramInRc(canvas:Canvas, rc:Rect):number[] {
+  const ctx = canvas.getContext('2d');
+  const data = ctx.getImageData(0,0,canvas.width, canvas.height);
+
+  let ret:number[] = [];
+  let alpha:number[] = [];
+  for(var x = 0;x < 256; x++) {
+    ret.push(0);
+    alpha.push(0);
+  }
+
+  const pix = [1,1,1,0];
+  console.log("getHistogramInRc for ", rc);
+
+  const bytesPerRow = canvas.width * pix.length;
+
+  let pixelsChecked = 0;
+
+  const ixColLeft = rc.left;
+  const ixColRight = rc.right;
+
+  for(var ixRow = rc.top; ixRow < rc.bottom / 2; ixRow++) {
+    
+
+    const byteStart = ixRow * bytesPerRow;
+
+    for(var ixCol = ixColLeft; ixCol < ixColRight; ixCol++) {
+      const ixPx = ixRow * bytesPerRow + ixCol*pix.length;
+      pixelsChecked++;
+
+      for(var ixChannel = 0; ixChannel < pix.length; ixChannel++) {
+        const px = data.data[ixPx + ixChannel];
+        if(pix[ixChannel]) {
+          ret[px]++;
+        } else {
+          alpha[px]++;
+        }
+      }
+    }
+  }
+  testAssert(alpha[255] === pixelsChecked);
+  return ret;
+}
 export function getHistogram(canvas:Canvas):number[] {
   const ctx = canvas.getContext('2d');
   const data = ctx.getImageData(0,0,canvas.width, canvas.height);
