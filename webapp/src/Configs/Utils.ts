@@ -124,8 +124,6 @@ export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:numb
 
   // let's ignore the blown-out values: they're already blown out, there's nothing we can do to save them
   let N = comboHisto.length;
-  comboHisto = comboHisto.slice(1, N-1);
-  N -= 2;
   let total = 0;
   comboHisto.forEach((val) => total += val);
 
