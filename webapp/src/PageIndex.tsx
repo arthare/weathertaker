@@ -29,8 +29,23 @@ function readBlob(b:Blob):Promise<string> {
 
 const PageIndex = () => {
 
-  const params:{handle:string} = useParams<any>();
+  let params:{handle:string} = useParams<any>();
   console.log("index props: ", params);
+
+  if(params?.handle) {
+    try {
+      window.localStorage.setItem('lastSource', JSON.stringify(params.handle));
+    } catch(e) {}
+  } else {
+    // no handle?  maybe we have remembered your last one
+    try {
+      const handle = JSON.parse(window.localStorage.getItem('lastSource') || 'undefined');
+      console.log("loaded handle of ", handle);
+      params = {handle};
+    } catch(e) {
+
+    }
+  }
 
   const [videoUrl, setVideoUrl] = useState<string|undefined>(undefined);
   const [videoResponse, setVideoResponse] = useState<any>(undefined);
@@ -236,6 +251,7 @@ const PageIndex = () => {
   const onNext = () => {
     const url = `${videoNextUrl}?id=${sourceResponse.id}`;
     console.log("trying to grab ", url);
+
     fetch(url).then((response) => response.json()).then((response) => {
       // this tells us the next source info to go to
       window.location.href = `/location/${response.handle}`;
