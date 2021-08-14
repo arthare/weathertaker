@@ -219,7 +219,7 @@ export default class Db {
   static getRecentImages(tmNow:number, spanSeconds:number, sourceId:number):Promise<ImageInfo[]> {
     return getDb().then((db) => {
       return new Promise<ImageInfo[]>((resolve, reject) => {
-        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 600', [sourceId], (err, result:any[]) => {
+        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 800', [sourceId], (err, result:any[]) => {
           if(err) {
             console.error("getRecentImages error", err);
             reject(err);
