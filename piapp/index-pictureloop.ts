@@ -138,6 +138,13 @@ async function checkSaveRawImage(rawBuffer:Buffer):Promise<any> {
     });
   }
 
+  if(process.env['SAVELOCALIMAGES']) {
+    try {
+      fs.mkdirSync('./saved-images');
+    } catch(e) {/* probably already created, don't care */}
+    fs.writeFileSync(`./saved-images/${new Date().getTime()}.jpg`, rawBuffer);
+  }
+
   g_tmLastRawImage = dtNow.getTime();
 
 }
