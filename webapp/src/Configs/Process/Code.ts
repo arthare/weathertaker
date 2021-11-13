@@ -1,6 +1,6 @@
 import { Canvas } from "canvas";
 import { LatLngModel } from "../LatLng/Model";
-import { analyzeHistogram, elapsed, getMeanBrightness, testAssert } from "../Utils";
+import { analyzeHistogram, elapsed, getHistogram, getMeanBrightness, testAssert } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
 
@@ -46,7 +46,7 @@ export function apply(input:Canvas, models:any):Canvas {
   }
 
   const peakHistoBrightness = 256;
-  const basicStats = getMeanBrightness(input);
+  const basicStats = getMeanBrightness(input, getHistogram);
 
   const histoResult = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStats.histo);
 

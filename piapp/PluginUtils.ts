@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import { platform } from 'os';
 import { CameraModel } from '../webapp/src/Configs/Camera/Model';
-import { elapsed, getHistogramInRc, getMeanBrightness } from '../webapp/src/Configs/Utils';
+import { elapsed, getHistogram, getHistogramInRc, getMeanBrightness } from '../webapp/src/Configs/Utils';
 import { CameraPlugin } from './Plugin';
 import { testAssert } from './Utils';
 
@@ -78,11 +78,11 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
 
     const peakHistoBrightness = 256;
 
-    let basicStats;
+    let basicStats:{mean:number, histo:number[]}|null = null;
     if(cameraModel.rcExposure) {
-      basicStats = getHistogramInRc(image, cameraModel.rcExposure);
+      basicStats = getMeanBrightness(image, (canvas) => getHistogramInRc(canvas, cameraModel.rcExposure));
     } else {
-      basicStats = getMeanBrightness(image);
+      basicStats = getMeanBrightness(image, getHistogram);
     }
     
     const mean = basicStats.mean;

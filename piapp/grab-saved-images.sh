@@ -1,0 +1,1 @@
+scp pi@$1:/home/pi/weathertaker/piapp/saved-images/* ./saved-images/

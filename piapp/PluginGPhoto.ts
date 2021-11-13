@@ -3,7 +3,7 @@ import { exec, spawnSync } from "child_process";
 import { isBuffer } from "util";
 import { CameraModel } from "../webapp/src/Configs/Camera/Model";
 import { IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH } from "../webapp/src/Configs/Types";
-import { elapsed, getMeanBrightness } from "../webapp/src/Configs/Utils";
+import { elapsed } from "../webapp/src/Configs/Utils";
 import { CameraPlugin } from "./Plugin";
 import { GPhotoIsoChoice, GPhotoShutterSpeedChoice, GPhotoSpeeds, parseGPhoto2Isos, parseGPhoto2Speeds } from "./PluginGPhotoUtils";
 import { ExposureAdjustingCamera, readFromCamera } from "./PluginUtils";

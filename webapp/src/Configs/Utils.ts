@@ -36,7 +36,7 @@ export function getHistogramInRc(canvas:Canvas, rc:Rect):number[] {
   const ixColLeft = rc.left;
   const ixColRight = rc.right;
 
-  for(var ixRow = rc.top; ixRow < rc.bottom / 2; ixRow++) {
+  for(var ixRow = rc.top; ixRow < rc.bottom; ixRow++) {
     
 
     const byteStart = ixRow * bytesPerRow;
@@ -106,9 +106,9 @@ export function getHistogram(canvas:Canvas):number[] {
   return ret;
 }
 
-export function getMeanBrightness(canvas:Canvas):{histo:number[], mean:number} {
+export function getMeanBrightness(canvas:Canvas, fnHisto:(canvas:Canvas)=>number[]):{histo:number[], mean:number} {
   
-  const histo = getHistogram(canvas);
+  const histo = fnHisto(canvas);
   
   let sum = 0;
   let count = 0;

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import { getHistogram, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
+import { getHistogram, getHistogramInRc, getMeanBrightness, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
 import {Image} from 'canvas';
 import { ProcessModel } from '../webapp/src/Configs/Process/Model';
 import { CurrentTimeModel } from '../webapp/src/Configs/CurrentTime/Model';
@@ -16,7 +16,8 @@ export async function runTestImages() {
       "desiredW": 1920,
       "desiredH": 1272,
       "desiredPhotoPeriodMs": 10000,
-      "minSunAngle": -90
+      "minSunAngle": -90,
+      "targetedMeanBrightness": 128,
     },
     "LatLng": {
       "lat": 51.1984,
@@ -36,6 +37,18 @@ export async function runTestImages() {
         "minStretchSpan": 40
       }
     }
+  }
+
+  { // testing the too-bright and too-dark images
+    const buf = fs.readFileSync("./saved-images/too-bright/1636833837512.jpg");
+    const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
+    const meanBrightness = getMeanBrightness(canvas, getHistogram);
+    testAssert(meanBrightness.mean >= 200, "This sucker is real bright, so it should score well over 200");
+
+    const meanBrightnessInRc = getMeanBrightness(canvas, (canvas) => getHistogramInRc(canvas, { left: 264, top: 500, right: 1577, bottom: 653 }));
+    testAssert(meanBrightness.mean >= 200, "This sucker is real bright, so it should score well over 200");
+    debugger;
+
   }
 
   const buf = fs.readFileSync("./test-images/special/gray-circle.proc.png");
@@ -61,6 +74,7 @@ export async function runTestImages() {
     
     fs.writeFileSync(`${file}.proc.jpg`, processed.toBuffer());
   }
+
 
 
 
