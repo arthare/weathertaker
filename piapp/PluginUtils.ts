@@ -80,9 +80,9 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
 
     let basicStats:{mean:number, histo:number[]}|null = null;
     if(cameraModel.rcExposure) {
-      basicStats = getMeanBrightness(image, (canvas) => getHistogramInRc(canvas, cameraModel.rcExposure));
+      basicStats = getMeanBrightness(image as any, (canvas) => getHistogramInRc(canvas, cameraModel.rcExposure));
     } else {
-      basicStats = getMeanBrightness(image, getHistogram);
+      basicStats = getMeanBrightness(image as any, getHistogram);
     }
     
     const mean = basicStats.mean;
