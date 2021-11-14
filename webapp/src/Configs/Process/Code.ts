@@ -37,12 +37,15 @@ export function apply(input:Canvas, models:any):Canvas {
   const finalModel = myModel.day;
   const latLng:LatLngModel|null = models['LatLng'];
   if(latLng && models['CurrentTime']) {
+    console.log("currenttime model = ", models['CurrentTime']);
     let pctDay = models['CurrentTime'].pctDay;
     
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
     finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
+  } else {
+    console.log("we didn't get told what time it was, so we'll assume it is daytime");
   }
 
   let fnHisto = getHistogram;
