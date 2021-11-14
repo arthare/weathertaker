@@ -37,13 +37,13 @@ export function apply(input:Canvas, models:any):Canvas {
   const finalModel = myModel.day;
   const latLng:LatLngModel|null = models['LatLng'];
   if(latLng && models['CurrentTime']) {
-    console.log("currenttime model = ", models['CurrentTime']);
     let pctDay = models['CurrentTime'].pctDay;
     
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
     finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
+    console.log("currenttime model = ", models['CurrentTime'], " finalModel = ", finalModel);
   } else {
     console.log("we didn't get told what time it was, so we'll assume it is daytime");
   }
@@ -67,7 +67,7 @@ export function apply(input:Canvas, models:any):Canvas {
   const peakHistoBrightness = 256;
   const basicStats = getMeanBrightness(input, fnHisto);
 
-  const histoResult = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStats.histo);
+  const histoResult = analyzeHistogram(finalModel.dropPctDark, finalModel.dropPctLight, peakHistoBrightness, basicStats.histo);
 
   const data = ctx.getImageData(0,0,input.width, input.height);
   const pixels = data.data;
@@ -116,7 +116,7 @@ export function apply(input:Canvas, models:any):Canvas {
   if(process.env['SAVELOCALIMAGES']) {
     // we're doing some logging and research on images, so let's do an "after"
     const basicStatsAfter = getMeanBrightness(input, fnHisto);
-    const histoResultAfter = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStatsAfter.histo);
+    const histoResultAfter = analyzeHistogram(finalModel.dropPctDark, finalModel.dropPctLight, peakHistoBrightness, basicStatsAfter.histo);
     console.log("After Processing: image stats histoResult ", histoResultAfter, " with mean ", basicStatsAfter.mean);
   }
 
