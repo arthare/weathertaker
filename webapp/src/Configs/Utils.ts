@@ -105,7 +105,7 @@ export function getHistogram(canvas:Canvas):number[] {
   return ret;
 }
 
-export function getMeanBrightness(canvas:Canvas, fnHisto:(canvas:Canvas)=>number[]):{histo:number[], mean:number} {
+export function getMeanBrightness(canvas:Canvas, fnHisto:(canvas:Canvas)=>number[]):{histo:number[], mean:number, pixelCount:number, histoPct:number[]} {
   
   const histo = fnHisto(canvas);
   
@@ -116,7 +116,12 @@ export function getMeanBrightness(canvas:Canvas, fnHisto:(canvas:Canvas)=>number
     count += histo[val];
   }
   const mean = sum / count;
-  return {histo, mean};
+  return {
+    histo, 
+    mean,
+    pixelCount: count,
+    histoPct: histo.map((bucket) => bucket / count),
+  };
 }
 
 export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:number, nHisto:number, comboHisto:number[]):{low:number, mean:number, high:number} {

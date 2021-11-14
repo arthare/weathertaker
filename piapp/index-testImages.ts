@@ -8,6 +8,8 @@ import {apply as processApply} from '../webapp/src/Configs/Process/Code';
 
 export async function runTestImages() {
 
+  process.env['SAVELOCALIMAGES'] = "1";
+
   const root = `./test-images`
   const imgs = fs.readdirSync(root);
   let lastPromise:Promise<any> = Promise.resolve();
@@ -41,14 +43,17 @@ export async function runTestImages() {
   }
 
   { // testing the too-bright and too-dark images
-    const buf = fs.readFileSync("./saved-images/too-bright/1636833837512.jpg");
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
-    const meanBrightness = getMeanBrightness(canvas, getHistogram);
+    const rcExposure1 = { left: 264, top: 500, right: 1577, bottom: 653 };
+    const modelWithRc = JSON.parse(JSON.stringify(modelToTest));
+    modelWithRc.Camera.rcExposure = rcExposure1;
+
+    const buf1 = fs.readFileSync("./saved-images/too-bright/1636833837512.jpg");
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const meanBrightness = getMeanBrightness(canvas1, getHistogram);
     testAssert(meanBrightness.mean >= 200, "This sucker is real bright, so it should score well over 200");
 
-    const rcExposure = { left: 264, top: 500, right: 1577, bottom: 653 };
-    const meanBrightnessInRc = getMeanBrightness(canvas, (canvas) => getHistogramInRc(canvas, rcExposure));
-    testAssert(meanBrightness.mean >= 200, "This sucker is real bright, so it should score well over 200");
+    const meanBrightnessInRc = getMeanBrightness(canvas1, (canvas) => getHistogramInRc(canvas, rcExposure1));
+    testAssert(meanBrightnessInRc.mean >= 200, "This sucker is real bright, so it should score well over 200");
 
     // testing the histogram analyzer - we already know what the mean of this image is, so we can verify
     const analyze = analyzeHistogram(0, 100, meanBrightness.histo.length, meanBrightness.histo);
@@ -56,11 +61,34 @@ export async function runTestImages() {
 
 
     // ok, let's try to process this sucker!
-    const modelWithRc = JSON.parse(JSON.stringify(modelToTest));
-    modelWithRc.Camera.rcExposure = rcExposure;
-    const canvasAfterApplication = processApply(canvas, modelWithRc);
-    const meanBrightnessAfterEdit = getMeanBrightness(canvasAfterApplication, (canvas) => getHistogramInRc(canvas, rcExposure));
-    debugger;
+    const canvasAfterApplication = processApply(canvas1, modelWithRc);
+    const meanBrightnessAfterEdit = getMeanBrightness(canvasAfterApplication, (canvas) => getHistogramInRc(canvas, rcExposure1));
+
+    
+    // this is a nighttime shot
+    const buf2 = fs.readFileSync("./saved-images/too-dark/1636863241684.jpg");
+    const canvas2 = await ImageEffects.prepareCanvasFromBuffer(buf2, () => new Image());
+    modelWithRc.Camera.rcExposure = {
+      "left": 267,
+      "top": 0,
+      "right": 1637,
+      "bottom": 761
+    };
+    modelWithRc.Process = {
+      "day": {
+        "dropPctDark": 10,
+        "middle": 128,
+        "dropPctLight": 85,
+        "minStretchSpan": 80
+      },
+      "night": {
+        "dropPctDark": 10,
+        "middle": 128,
+        "dropPctLight": 85,
+        "minStretchSpan": 40
+      }
+    }
+    const canvasAfterApplication2 = processApply(canvas2, modelWithRc);
   }
 
   const buf = fs.readFileSync("./test-images/special/gray-circle.proc.png");

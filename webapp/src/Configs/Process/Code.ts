@@ -72,6 +72,7 @@ export function apply(input:Canvas, models:any):Canvas {
   let span = histoResult.high - histoResult.low;
 
   const MIN_SPAN = finalModel.minStretchSpan;
+  console.log("Processing: image stats histoResult ", histoResult, "mean ", basicStats.mean, " span ", span, " min span ", MIN_SPAN);
   if(span < MIN_SPAN) {
     if(histoResult.mean < MIN_SPAN / 2) {
       histoResult.low = 0;
@@ -87,9 +88,11 @@ export function apply(input:Canvas, models:any):Canvas {
     }
     span = histoResult.high - histoResult.low;
     testAssert(span >= MIN_SPAN, "after all this math it better be");
+    
   }
 
   if(span >= MIN_SPAN) {
+    console.log("actually applying processing...");
     pixels.forEach((byt, index) => {
       let val = byt;
       if(val < histoResult.mean) {
@@ -105,6 +108,13 @@ export function apply(input:Canvas, models:any):Canvas {
       pixels[index] = Math.floor(val);
     })
     ctx.putImageData(data, 0, 0);
+  }
+
+  if(process.env['SAVELOCALIMAGES']) {
+    // we're doing some logging and research on images, so let's do an "after"
+    const basicStatsAfter = getMeanBrightness(input, fnHisto);
+    const histoResultAfter = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStatsAfter.histo);
+    console.log("After Processing: image stats histoResult ", histoResultAfter, " with mean ", basicStatsAfter.mean);
   }
 
   return input;
