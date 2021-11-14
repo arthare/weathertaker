@@ -272,6 +272,18 @@ const PageIndex = () => {
     })
   }
 
+  const onMoveOverImagePreview = (e:any) => {
+    var rect = e.target.getBoundingClientRect();
+    var x = e.clientX - rect.left; //x position within the element.
+    var y = e.clientY - rect.top;  //y position within the element.
+    console.log("Left? : " + x + " ; Top? : " + y + ".");
+    const pctX = x / e.target.width;
+    const pctY = y / e.target.height;
+    const realX = pctX * e.target.naturalWidth;
+    const realY = pctY * e.target.naturalHeight;
+    console.log("pctX = ", pctX, " pctY = ", pctY, realX, realY);
+  }
+
   return (
     <div className="Index__Video-Holder">
       <Helmet>
@@ -323,7 +335,7 @@ const PageIndex = () => {
         <video className="Index__Video" src={videoUrl} onPause={() => {console.log("pause"); setVideoPlaying(false)}} onPlaying={() => {console.log("playing"); doSizeCheck(); setVideoPlaying(true)}} onLoad={onVideoLoad} autoPlay={true} loop={true} muted={true} onError={onError}></video>
         {lastImageDataUri && (
           <div className="Index__Video-LastImageModal">
-            <img className="Index__Video-LastImage" src={lastImageDataUri}></img>
+            <img className="Index__Video-LastImage" src={lastImageDataUri} onMouseMove={onMoveOverImagePreview}></img>
             <button className="Index__Video-LastImageModal--Button" onClick={() => setLastImageDataUri('')}>Close</button>
           </div>
         )}

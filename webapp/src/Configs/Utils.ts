@@ -55,7 +55,6 @@ export function getHistogramInRc(canvas:Canvas, rc:Rect):number[] {
       }
     }
   }
-  testAssert(alpha[255] === pixelsChecked);
   return ret;
 }
 export function getHistogram(canvas:Canvas):number[] {
@@ -124,37 +123,48 @@ export function analyzeHistogram(nthPercentileLow:number, nthPercentileHigh:numb
 
   // let's ignore the blown-out values: they're already blown out, there's nothing we can do to save them
   let N = comboHisto.length;
-  let total = 0;
-  comboHisto.forEach((val) => total += val);
+  let totalPixels = 0;
+
+  let sum = 0;
+  let count = 0;
+  comboHisto.forEach((pixelCount, value) => {
+    sum += pixelCount * value;
+    count += pixelCount;
+
+    totalPixels += pixelCount
+  });
 
   let targets = [
-    (nthPercentileLow / 100)*total,
-    total / 2,
-    (nthPercentileHigh / 100)*total,
+    (nthPercentileLow / 100)*totalPixels,
+    totalPixels / 2,
+    (nthPercentileHigh / 100)*totalPixels,
+    Number.MAX_SAFE_INTEGER,
   ];
 
-  let results:number[] = [];
-  let currentSum = 0;
+  let results:number[] = [0,0,0];
+  let currentPixelSum = 0;
   let maxHistoBucketWithValue = 0;
+
+  let ixCurrentTarget = 0;
+
   for(var value = 0; value < comboHisto.length; value++) {
     const thisAddition = comboHisto[value];
     
     if(thisAddition > 0) {
       maxHistoBucketWithValue = value;
     }
-    targets.forEach((target, index) => {
-      const thisSum = currentSum;
-      const nextSum = currentSum + thisAddition;
-      if(target >= thisSum && target < nextSum) {
-        const pctTowardsNext = (target - thisSum) / (nextSum - thisSum);
-        dassert(pctTowardsNext >= 0 && pctTowardsNext <= 1.0)
-        results[index] = value + pctTowardsNext;
-      }
-    })
-    currentSum += thisAddition;
+
+    currentPixelSum += thisAddition;
+
+    while(thisAddition > 0 && currentPixelSum >= targets[ixCurrentTarget] && ixCurrentTarget < targets.length) {
+      // we just switched over
+      results[ixCurrentTarget] = value;
+      ixCurrentTarget++;
+    }
   }
 
-  return {low:results[0], mean:results[1], high:results[2] || maxHistoBucketWithValue};
+
+  return {low:results[0], mean:sum / count, high:results[2] || maxHistoBucketWithValue};
 }
 
 

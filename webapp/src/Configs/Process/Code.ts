@@ -1,6 +1,6 @@
 import { Canvas } from "canvas";
 import { LatLngModel } from "../LatLng/Model";
-import { analyzeHistogram, elapsed, getHistogram, getMeanBrightness, testAssert } from "../Utils";
+import { analyzeHistogram, elapsed, getHistogram, getHistogramInRc, getMeanBrightness, testAssert } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
 
@@ -36,7 +36,7 @@ export function apply(input:Canvas, models:any):Canvas {
 
   const finalModel = myModel.day;
   const latLng:LatLngModel|null = models['LatLng'];
-  if(latLng) {
+  if(latLng && models['CurrentTime']) {
     let pctDay = models['CurrentTime'].pctDay;
     
     finalModel.dropPctDark = pctDay*myModel.day.dropPctDark + (1-pctDay)*myModel.night.dropPctDark;
@@ -45,8 +45,24 @@ export function apply(input:Canvas, models:any):Canvas {
     finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
   }
 
+  let fnHisto = getHistogram;
+  try {
+    if(models['Camera']['rcExposure']) {
+      const rc = models['Camera']['rcExposure'];
+
+      if(rc && 
+         typeof rc.left === 'number' &&
+         typeof rc.top === 'number' &&
+         typeof rc.right === 'number' &&
+         typeof rc.bottom === 'number') {
+        // ok, they're definitely operating with a valid histogram selector, so let's pick our histogram off of the selected region
+        fnHisto = (canvas:Canvas) => getHistogramInRc(canvas, rc);
+      }
+    }
+  } catch(e) {}
+
   const peakHistoBrightness = 256;
-  const basicStats = getMeanBrightness(input, getHistogram);
+  const basicStats = getMeanBrightness(input, fnHisto);
 
   const histoResult = analyzeHistogram(myModel.day.dropPctDark, myModel.day.dropPctLight, peakHistoBrightness, basicStats.histo);
 
