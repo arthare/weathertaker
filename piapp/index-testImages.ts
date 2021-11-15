@@ -41,6 +41,26 @@ export async function runTestImages() {
       }
     }
   }
+  {
+    const modelWithRc = JSON.parse(JSON.stringify(modelToTest));
+    modelWithRc.Camera.rcExposure = {
+      "left": 267,
+      "top": 0,
+      "right": 1637,
+      "bottom": 761
+    };
+    modelWithRc.Process.day = {
+      "dropPctDark": 1.5,
+      "middle": 128,
+      "dropPctLight": 99,
+      "minStretchSpan": 80
+    }
+    const buf1 = fs.readFileSync("./saved-images/1636904096165.jpg");
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const canvasAfterApplication = processApply(canvas1, modelWithRc);
+    fs.writeFileSync(`./saved-images/1636904096165-edit-${modelWithRc.Process.day.dropPctDark}-${modelWithRc.Process.day.dropPctLight}.png`, canvasAfterApplication.toBuffer());
+
+  }
 
   { // testing the too-bright and too-dark images
     const rcExposure1 = { left: 264, top: 500, right: 1577, bottom: 653 };
@@ -90,6 +110,7 @@ export async function runTestImages() {
     }
     const canvasAfterApplication2 = processApply(canvas2, modelWithRc);
   }
+
 
   const buf = fs.readFileSync("./test-images/special/gray-circle.proc.png");
   const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());

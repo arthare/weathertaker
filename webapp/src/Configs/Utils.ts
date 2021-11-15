@@ -220,7 +220,6 @@ export class ImageEffects {
 
     
     if(!currentModels['CurrentTime']) {
-      debugger;
 
       const tm = new Date().getTime();
 
