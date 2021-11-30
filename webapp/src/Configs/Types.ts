@@ -38,6 +38,11 @@ export interface ReactSubmission {
 how:ReactionType; // how are we reacting?
 videoId:number|string;
 }
+export interface NewModelRequest {
+  pwd:string;
+  model:any;
+  sourceId: number;
+}
 
 export const IMAGE_SUBMISSION_WIDTH = 1640;
 export const IMAGE_SUBMISSION_HEIGHT = 1232;

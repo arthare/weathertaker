@@ -9,7 +9,7 @@ import md5 from 'md5';
 import { notifyDirtySource } from './VideoMaker';
 import { platform } from 'os';
 import { rejects } from 'assert';
-import { ImageSubmissionRequest, ReactionType, RecentRawFileRequest, RecentRawFileSubmissionRequest } from '../webapp/src/Configs/Types';
+import { ImageSubmissionRequest, NewModelRequest, ReactionType, RecentRawFileRequest, RecentRawFileSubmissionRequest } from '../webapp/src/Configs/Types';
 
 const config = JSON.parse(fs.readFileSync('./db-config.json', 'utf8'));
 
@@ -317,23 +317,18 @@ export default class Db {
       })
     }).finally(() => db.end());
   }
-  static async setCurrentModels(apiKey:string, newModel:any):Promise<any> {
+  static async setCurrentModels(update:NewModelRequest):Promise<any> {
 
     // let's make sure that every key in newModel represents a model that actually exists
-    for(var key in newModel) {
-      const regexOnlyLetters = /[\D]/gi;
-      key = key.replace(regexOnlyLetters, '');
-      const required = require(`../webapp/src/Configs/${key}`);
-      // if we didn't throw, we're good!
-    }
+    
 
     const db = await getDb();
 
     return new Promise((resolve, reject) => {
-      db.execute(`update sources set model=? where apikey=?`, [JSON.stringify(newModel), apiKey], (err, results:any[]) => {
+      db.execute(`update sources set models=? where apikey=? and id=?`, [JSON.stringify(update.model), update.pwd, update.sourceId], (err, results:any) => {
         if(err) {
           reject(err);
-        } else if(results.length === 1) {
+        } else if(results.affectedRows === 1) {
           try {
             resolve(JSON.parse(results[0].model));
           } catch(e) {

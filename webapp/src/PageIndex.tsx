@@ -3,7 +3,7 @@ import './PageIndex.scss';
 import {Helmet} from 'react-helmet'
 import { useParams } from 'react-router-dom';
 import Modal from './Modal';
-import { GetConfigResponse } from './Configs/Types';
+import { GetConfigResponse, NewModelRequest } from './Configs/Types';
 import ConfigModalContents from './ConfigModalContents';
 
 let base = 'http://fastsky.ca/api/';
@@ -60,8 +60,9 @@ const PageIndex = () => {
   let videoMetaUrl = `${baseDebug}video`;
   let sourceMetaUrl = `${baseDebug}source`;
   let videoNextUrl = `${baseDebug}next-source`;
-  let configUrl = `${base}config`;
+  let configUrl = `${baseDebug}config`;
   let lastImageUrl = `${base}last-image`;
+  let modelUrl = `${baseDebug}models`;
 
   function doSizeCheck() {
     console.log("doing size check");
@@ -284,6 +285,21 @@ const PageIndex = () => {
     console.log("pctX = ", pctX, " pctY = ", pctY, realX, realY);
   }
 
+  const onSendNewModel = async (pwd:string, model:any) => {
+    const payload:NewModelRequest = {
+      pwd,
+      model,
+      sourceId: sourceResponse.id,
+    }
+    await fetch(modelUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
   return (
     <div className="Index__Video-Holder">
       <Helmet>
@@ -301,7 +317,7 @@ const PageIndex = () => {
         </div>
 
         <Modal showing={showingConfig} onClose={onCloseConfig}>
-          {configData && <ConfigModalContents config={configData} />}
+          {configData && <ConfigModalContents config={configData} onSendNewModel={onSendNewModel} />}
         </Modal>
 
         {sourceResponse && (

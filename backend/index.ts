@@ -6,7 +6,7 @@ import {initVideoMaker} from './VideoMaker';
 import Image from 'image-js';
 import fs from 'fs';
 import { resolveNaptr } from 'dns';
-import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
+import {GetConfigResponse, ImageSubmissionRequest, IMAGE_SUBMISSION_HEIGHT, IMAGE_SUBMISSION_WIDTH, NewModelRequest, ReactionType, ReactSubmission, RecentRawFileRequest, RecentRawFileSubmissionRequest} from '../webapp/src/Configs/Types'
 
 
 let app = <core.Express>express();
@@ -58,14 +58,21 @@ app.get('/video', (req:core.Request, res:core.Response) => {
 
 });
 app.post('/models', (req:core.Request, res:core.Response) => {
-  return postStartup(req, res).then(async (modelUpdate:any) => {
-    const currentModel = await Db.getCurrentModels(modelUpdate.apiKey);
-    for(var key in modelUpdate) {
-      if(key !== 'apiKey') {
-        currentModel[key] = modelUpdate[key];
+  return postStartup(req, res).then(async (modelUpdate:NewModelRequest) => {
+    const currentModel = await Db.getCurrentModels(modelUpdate.sourceId);
+    for(var key in modelUpdate.model) {
+      switch(key) {
+        case 'pwd':
+        case 'model':
+        case 'sourceId':
+          break;
+        default:
+          currentModel[key] = modelUpdate.model[key];
+          break;
       }
     }
-    return Db.setCurrentModels(modelUpdate.apiKey, currentModel);
+    modelUpdate.model = currentModel;
+    return Db.setCurrentModels(modelUpdate);
   }).then(handleSuccess(req,res), handleFailure(req,res));
 });
 
@@ -120,13 +127,22 @@ app.get('/config', async (req:core.Request, res:core.Response) => {
   try {
     const source = await Db.getSourceInfo(req.query.sourceId);
     const models = await Db.getCurrentModels(req.query.sourceId);
-    const noon = await Db.getRawFile({when: 'noon', sourceId: source.id});
-    const night = await Db.getRawFile({when: 'night', sourceId: source.id});
+
+    let noon;
+    let night;
+    try {
+      noon = await Db.getRawFile({when: 'noon', sourceId: source.id});
+    } catch(e) {};
+    
+    try {
+      night = await Db.getRawFile({when: 'night', sourceId: source.id});
+    } catch(e) {};
+    
 
     const ret:GetConfigResponse = {
       models,
-      noonBase64: noon.toString('base64'),
-      nightBase64: night.toString('base64'),
+      noonBase64: noon && noon.toString('base64'),
+      nightBase64: night && night.toString('base64'),
     }
     handleSuccess(req,res)(ret);
   } catch(e) {
