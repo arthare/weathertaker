@@ -139,7 +139,7 @@ async function checkSaveRawImage(rawBuffer:Buffer, modelUsed:any):Promise<any> {
   }
 
   
-  if(process.env['SAVELOCALIMAGES']) {
+  if(false && process.env['SAVELOCALIMAGES']) {
     try {
       fs.mkdirSync('./saved-images');
     } catch(e) {/* probably already created, don't care */}

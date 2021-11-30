@@ -5,6 +5,20 @@ import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
 
 
+function copyOverDefaults(model:any, key:string, defSetting:any) {
+  if(!model[key]) {
+    model[key] = defSetting[key];
+  } else {
+    // need to check individual settings
+    const settingObj = model[key];
+    for(var settingName in defSetting[key]) {
+      if(settingObj[settingName] === undefined) {
+        settingObj[settingName] = defSetting[key][settingName];
+      }
+    }
+  }
+}
+
 export function apply(input:Canvas, models:any):Canvas {
 
   const ctx = input.getContext('2d');
@@ -17,22 +31,22 @@ export function apply(input:Canvas, models:any):Canvas {
       dropPctLight: 100,
       middle: 128,
       minStretchSpan: 80,
+      centerPointMin: 0.2,
+      centerPointMax: 0.8,
     },
     night: {
       dropPctDark: 10.0,
       dropPctLight: 90,
       middle: 128,
       minStretchSpan: 80,
+      centerPointMin: 0.2,
+      centerPointMax: 0.8,
     },
     do:true,
   }
 
-  for(var key in defaultModel) {
-    if(!(myModel as any)[key]) {
-      (myModel as any)[key] = (defaultModel as any)[key] as any;
-    }
-  }
-
+  copyOverDefaults(myModel, 'day', defaultModel);
+  copyOverDefaults(myModel, 'night', defaultModel);
 
   const finalModel = myModel.day;
   const latLng:LatLngModel|null = models['LatLng'];
@@ -43,6 +57,9 @@ export function apply(input:Canvas, models:any):Canvas {
     finalModel.dropPctLight = pctDay*myModel.day.dropPctLight + (1-pctDay)*myModel.night.dropPctLight;
     finalModel.middle = pctDay * myModel.day.middle + (1-pctDay)*myModel.night.middle;
     finalModel.minStretchSpan = (pctDay * myModel.day.minStretchSpan + (1-pctDay)*myModel.night.minStretchSpan);
+    finalModel.centerPointMin = (pctDay * myModel.day.centerPointMin + (1-pctDay)*myModel.night.centerPointMin);
+    finalModel.centerPointMax = (pctDay * myModel.day.centerPointMax + (1-pctDay)*myModel.night.centerPointMax);
+
     console.log("currenttime model = ", models['CurrentTime'], " finalModel = ", finalModel);
   } else {
     console.log("we didn't get told what time it was, so we'll assume it is daytime");
@@ -74,17 +91,16 @@ export function apply(input:Canvas, models:any):Canvas {
 
   let span = histoResult.high - histoResult.low;
 
+
   const MIN_SPAN = finalModel.minStretchSpan;
   console.log("Processing: image stats histoResult ", histoResult, "mean ", basicStats.mean, " span ", span, " min span ", MIN_SPAN);
   if(span < MIN_SPAN) {
     if(histoResult.mean < MIN_SPAN / 2) {
       histoResult.low = 0;
       histoResult.high = MIN_SPAN;
-      histoResult.mean = MIN_SPAN / 2;
     } else if(histoResult.mean > peakHistoBrightness - MIN_SPAN/2) {
       histoResult.low = peakHistoBrightness - MIN_SPAN;
       histoResult.high = peakHistoBrightness;
-      histoResult.mean = peakHistoBrightness - MIN_SPAN/2;
     } else {
       histoResult.low = histoResult.mean - MIN_SPAN/2;
       histoResult.high = histoResult.mean + MIN_SPAN/2;
@@ -93,17 +109,28 @@ export function apply(input:Canvas, models:any):Canvas {
     testAssert(span >= MIN_SPAN, "after all this math it better be");
     
   }
+  
+  let meanToUse = histoResult.mean;
+  if(finalModel?.centerPointMin !== undefined && finalModel.centerPointMax !== undefined) {
+    // in a really dark scene, we might have histoResult = {low: 0, mean: 0.1, high: 30}.  Which means pixels between (0.0,0.1) get massively stretched to finalModel.middle, and pixels above that get blasted to nearly full brightness
+    // so let's make sure the meanToUse is between the 10% and 90% of brightness and see what that looks like
+    const lowLimit = histoResult.low + finalModel.centerPointMin * (histoResult.high - histoResult.low);
+    const highLimit = histoResult.low + finalModel.centerPointMax * (histoResult.high - histoResult.low);
+    meanToUse = Math.max(meanToUse, lowLimit);
+    meanToUse = Math.min(meanToUse, highLimit);
+  }
+
 
   if(span >= MIN_SPAN) {
     console.log("actually applying processing...");
     pixels.forEach((byt, index) => {
       let val = byt;
-      if(val < histoResult.mean) {
-        const pct = Math.max(0, (val - histoResult.low) / (histoResult.mean - histoResult.low));
+      if(val < meanToUse) {
+        const pct = Math.max(0, (val - histoResult.low) / (meanToUse - histoResult.low));
         testAssert(pct >= 0 && pct <= 1.0);
         val = Math.floor(pct * finalModel.middle);
       } else {
-        const pct = Math.min(1, (val-histoResult.mean) / (histoResult.high-histoResult.mean));
+        const pct = Math.min(1, (val-meanToUse) / (histoResult.high-meanToUse));
         testAssert(pct >= 0 && pct <= 1.0);
         val = finalModel.middle + Math.floor(pct*(255-finalModel.middle));
       }

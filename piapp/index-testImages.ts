@@ -14,6 +14,14 @@ export async function runTestImages() {
   const imgs = fs.readdirSync(root);
   let lastPromise:Promise<any> = Promise.resolve();
 
+  { // testing stretching on/off in dark situations
+    const modelToTest = JSON.parse(fs.readFileSync('./test-images/1638248040436.json', 'utf8'));
+    const buf1 = fs.readFileSync("./test-images/1638248040436.jpg");
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const canvasAfterApplication = processApply(canvas1, modelToTest);
+    fs.writeFileSync(`./test-images/1638248040436-save.png`, canvasAfterApplication.toBuffer());
+  }
+
   const modelToTest =  {
     "Camera": {
       "desiredW": 1920,
