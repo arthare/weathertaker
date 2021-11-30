@@ -108,7 +108,7 @@ async function acquireRawImage():Promise<{image:Buffer, exposer:CameraPlugin}> {
   
 }
 
-async function checkSaveRawImage(rawBuffer:Buffer):Promise<any> {
+async function checkSaveRawImage(rawBuffer:Buffer, modelUsed:any):Promise<any> {
   // this checks to see if we've taken an exemplar of a "night" or "noon" image and if so, sends it to the web DB
   const dtNow = new Date();
   const dtLast = new Date(g_tmLastRawImage);
@@ -139,16 +139,45 @@ async function checkSaveRawImage(rawBuffer:Buffer):Promise<any> {
   }
 
   
-  if(false && process.env['SAVELOCALIMAGES']) {
+  if(process.env['SAVELOCALIMAGES']) {
     try {
       fs.mkdirSync('./saved-images');
     } catch(e) {/* probably already created, don't care */}
-    fs.writeFileSync(`./saved-images/${new Date().getTime()}.jpg`, rawBuffer);
+    const tmNow = new Date().getTime();
+    fs.writeFileSync(`./saved-images/${tmNow}.jpg`, rawBuffer);
+    fs.writeFileSync(`./saved-images/${tmNow}.json`, JSON.stringify(modelUsed));
   }
 
   g_tmLastRawImage = dtNow.getTime();
 
 }
+
+function applyCurrentTimeToModel(currentModels:any) {
+  
+  if(!currentModels['CurrentTime']) {
+
+    const tm = new Date().getTime();
+
+    let pctDay = 1.0;
+    if(currentModels['LatLng']) {
+      const latLng = currentModels['LatLng'];
+      const currentDate = new Date(tm);
+      const pos = SunCalc.getPosition(currentDate, latLng.lat, latLng.lng);
+      const angleDegrees = pos.altitude * 180 / Math.PI;
+      const fullDay = 10;
+      const fullNight = -10;
+      pctDay = (angleDegrees - fullNight) / (fullDay - fullNight);
+      pctDay = Math.max(0.0, pctDay);
+      pctDay = Math.min(1.0, pctDay);
+    }
+    
+    currentModels['CurrentTime'] = {
+      tm: new Date().getTime(),
+      pctDay,
+    }
+  }
+}
+
 async function captureAndProcessOneImage():Promise<Buffer> {
   
   try {
@@ -159,15 +188,18 @@ async function captureAndProcessOneImage():Promise<Buffer> {
   }
   
   const exposure = await acquireRawImage();
-  
-  checkSaveRawImage(exposure.image);
+  const modelToUse = g_currentModels['Camera'] || defaultCameraModel;
+
+  applyCurrentTimeToModel(modelToUse);
+
+  checkSaveRawImage(exposure.image, modelToUse);
   
   const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image());
 
   await exposure.exposer.analyzeRawImage(g_currentModels['Camera'] || defaultCameraModel, canvas);
   let processedImage:Canvas;
   if(isPowerfulPi() && g_currentModels?.Process?.do) {
-    processedImage = await ImageEffects.process(canvas, g_currentModels);
+    processedImage = await ImageEffects.process(canvas, modelToUse);
   } else {
     // no processing on Pi zero's!
     processedImage = canvas;

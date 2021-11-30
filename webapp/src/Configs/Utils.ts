@@ -219,28 +219,6 @@ export class ImageEffects {
   static async process(canvas:Canvas, currentModels:any):Promise<Canvas> {
 
     
-    if(!currentModels['CurrentTime']) {
-
-      const tm = new Date().getTime();
-
-      let pctDay = 1.0;
-      if(currentModels['LatLng']) {
-        const latLng = currentModels['LatLng'];
-        const currentDate = new Date(tm);
-        const pos = SunCalc.getPosition(currentDate, latLng.lat, latLng.lng);
-        const angleDegrees = pos.altitude * 180 / Math.PI;
-        const fullDay = 10;
-        const fullNight = -10;
-        pctDay = (angleDegrees - fullNight) / (fullDay - fullNight);
-        pctDay = Math.max(0.0, pctDay);
-        pctDay = Math.min(1.0, pctDay);
-      }
-      
-      currentModels['CurrentTime'] = {
-        tm: new Date().getTime(),
-        pctDay,
-      }
-    }
 
     // ok, we've got our image!  let's run it through the pipeline!
     const pipeline = [
