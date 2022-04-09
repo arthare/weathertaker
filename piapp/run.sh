@@ -1,13 +1,5 @@
 source env-vars
 
-./install.sh
-npm install
-
-pushd .
-cd ../webapp
-npm install
-popd
-
 mkdir -p ./tmp
 echo "startup!" > ./tmp/startup.txt
 git stash
