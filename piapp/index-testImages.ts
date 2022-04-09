@@ -18,7 +18,7 @@ export async function runTestImages() {
     const modelToTest = JSON.parse(fs.readFileSync('./test-images/1638248040436.json', 'utf8'));
     const buf1 = fs.readFileSync("./test-images/1638248040436.jpg");
     const canvas1 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf1, () => new Image());
-    const canvasAfterApplication = processApply(canvas1, modelToTest);
+    const canvasAfterApplication = processApply<Canvas>(canvas1, modelToTest);
     fs.writeFileSync(`./test-images/1638248040436-save.png`, canvasAfterApplication.toBuffer());
   }
 
@@ -65,7 +65,7 @@ export async function runTestImages() {
     }
     const buf1 = fs.readFileSync("./saved-images/1636904096165.jpg");
     const canvas1 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf1, () => new Image());
-    const canvasAfterApplication = processApply(canvas1, modelWithRc);
+    const canvasAfterApplication = processApply<Canvas>(canvas1, modelWithRc);
     fs.writeFileSync(`./saved-images/1636904096165-edit-${modelWithRc.Process.day.dropPctDark}-${modelWithRc.Process.day.dropPctLight}.png`, canvasAfterApplication.toBuffer());
 
   }
@@ -89,7 +89,7 @@ export async function runTestImages() {
 
 
     // ok, let's try to process this sucker!
-    const canvasAfterApplication = processApply(canvas1, modelWithRc);
+    const canvasAfterApplication = processApply<Canvas>(canvas1, modelWithRc);
     const meanBrightnessAfterEdit = getMeanBrightness(canvasAfterApplication, (canvas) => getHistogramInRc(canvas, rcExposure1));
 
     
@@ -116,7 +116,7 @@ export async function runTestImages() {
         "minStretchSpan": 40
       }
     }
-    const canvasAfterApplication2 = processApply(canvas2, modelWithRc);
+    const canvasAfterApplication2 = processApply<Canvas>(canvas2, modelWithRc);
   }
 
 

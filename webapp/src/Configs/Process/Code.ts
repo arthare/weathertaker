@@ -19,9 +19,9 @@ function copyOverDefaults(model:any, key:string, defSetting:any) {
   }
 }
 
-export function apply(input:Canvas, models:any):Canvas {
+export function apply<T>(input:T, models:any):T {
 
-  const ctx = input.getContext('2d');
+  const ctx = (input as any).getContext('2d');
 
   let myModel:ProcessModel = models['Process'] || {};
 
@@ -82,11 +82,11 @@ export function apply(input:Canvas, models:any):Canvas {
   } catch(e) {}
 
   const peakHistoBrightness = 256;
-  const basicStats = getMeanBrightness(input, fnHisto);
+  const basicStats = getMeanBrightness((input as any), fnHisto);
 
   const histoResult = analyzeHistogram(finalModel.dropPctDark, finalModel.dropPctLight, peakHistoBrightness, basicStats.histo);
 
-  const data = ctx.getImageData(0,0,input.width, input.height);
+  const data = ctx.getImageData(0,0,(input as any).width, (input as any).height);
   const pixels = data.data;
 
   let span = histoResult.high - histoResult.low;
@@ -123,7 +123,7 @@ export function apply(input:Canvas, models:any):Canvas {
 
   if(span >= MIN_SPAN) {
     console.log("actually applying processing...");
-    pixels.forEach((byt, index) => {
+    pixels.forEach((byt:any, index:any) => {
       let val = byt;
       if(val < meanToUse) {
         const pct = Math.max(0, (val - histoResult.low) / (meanToUse - histoResult.low));
@@ -142,10 +142,10 @@ export function apply(input:Canvas, models:any):Canvas {
 
   if(process.env['SAVELOCALIMAGES']) {
     // we're doing some logging and research on images, so let's do an "after"
-    const basicStatsAfter = getMeanBrightness(input, fnHisto);
+    const basicStatsAfter = getMeanBrightness((input as any), fnHisto);
     const histoResultAfter = analyzeHistogram(finalModel.dropPctDark, finalModel.dropPctLight, peakHistoBrightness, basicStatsAfter.histo);
     console.log("After Processing: image stats histoResult ", histoResultAfter, " with mean ", basicStatsAfter.mean);
   }
 
-  return input;
+  return input as T;
 }
