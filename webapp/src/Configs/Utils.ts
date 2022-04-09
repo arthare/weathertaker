@@ -189,19 +189,19 @@ export function elapsed():number {
   return (tmNow - msStart);
 }
 
-function makeCanvas(w:number,h:number):Canvas {
+function makeCanvas<T>(w:number,h:number):T {
   if(typeof document !== 'undefined' && document.createElement) {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
     return c as any;
   } else {
-    return new Canvas(w,h);
+    return new Canvas(w,h) as any;
   }
 }
 
 export class ImageEffects {
-  static async prepareCanvasFromBuffer(inBuffer:Buffer, fnMakeImage:()=>any):Promise<Canvas> {
+  static async prepareCanvasFromBuffer<T>(inBuffer:Buffer, fnMakeImage:()=>any):Promise<T> {
 
     const image = await new Promise<any>((resolve, reject) => {
       const image = fnMakeImage();
@@ -210,7 +210,7 @@ export class ImageEffects {
       image.src = `data:image/jpeg;base64,${inBuffer.toString('base64')}`;
     })
 
-    const canvas = makeCanvas(image.width, image.height);
+    const canvas = makeCanvas<T>(image.width, image.height) as any;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(image, 0, 0);
 

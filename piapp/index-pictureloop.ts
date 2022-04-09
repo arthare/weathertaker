@@ -194,7 +194,7 @@ async function captureAndProcessOneImage():Promise<Buffer> {
 
   checkSaveRawImage(exposure.image, modelToUse);
   
-  const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image());
+  const canvas = await ImageEffects.prepareCanvasFromBuffer(exposure.image, () => new Image()) as unknown as Canvas;
 
   await exposure.exposer.analyzeRawImage(modelToUse?.Camera || defaultCameraModel, canvas);
   let processedImage:Canvas;

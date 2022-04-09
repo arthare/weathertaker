@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
 import { analyzeHistogram, getHistogram, getHistogramInRc, getMeanBrightness, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
-import {Image} from 'canvas';
+import {Canvas, Image} from 'canvas';
 import { ProcessModel } from '../webapp/src/Configs/Process/Model';
 import { CurrentTimeModel } from '../webapp/src/Configs/CurrentTime/Model';
 import {apply as processApply} from '../webapp/src/Configs/Process/Code';
@@ -17,7 +17,7 @@ export async function runTestImages() {
   { // testing stretching on/off in dark situations
     const modelToTest = JSON.parse(fs.readFileSync('./test-images/1638248040436.json', 'utf8'));
     const buf1 = fs.readFileSync("./test-images/1638248040436.jpg");
-    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf1, () => new Image());
     const canvasAfterApplication = processApply(canvas1, modelToTest);
     fs.writeFileSync(`./test-images/1638248040436-save.png`, canvasAfterApplication.toBuffer());
   }
@@ -64,7 +64,7 @@ export async function runTestImages() {
       "minStretchSpan": 80
     }
     const buf1 = fs.readFileSync("./saved-images/1636904096165.jpg");
-    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf1, () => new Image());
     const canvasAfterApplication = processApply(canvas1, modelWithRc);
     fs.writeFileSync(`./saved-images/1636904096165-edit-${modelWithRc.Process.day.dropPctDark}-${modelWithRc.Process.day.dropPctLight}.png`, canvasAfterApplication.toBuffer());
 
@@ -76,7 +76,7 @@ export async function runTestImages() {
     modelWithRc.Camera.rcExposure = rcExposure1;
 
     const buf1 = fs.readFileSync("./saved-images/too-bright/1636833837512.jpg");
-    const canvas1 = await ImageEffects.prepareCanvasFromBuffer(buf1, () => new Image());
+    const canvas1 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf1, () => new Image());
     const meanBrightness = getMeanBrightness(canvas1, getHistogram);
     testAssert(meanBrightness.mean >= 200, "This sucker is real bright, so it should score well over 200");
 
@@ -95,7 +95,7 @@ export async function runTestImages() {
     
     // this is a nighttime shot
     const buf2 = fs.readFileSync("./saved-images/too-dark/1636863241684.jpg");
-    const canvas2 = await ImageEffects.prepareCanvasFromBuffer(buf2, () => new Image());
+    const canvas2 = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf2, () => new Image());
     modelWithRc.Camera.rcExposure = {
       "left": 267,
       "top": 0,
@@ -121,7 +121,7 @@ export async function runTestImages() {
 
 
   const buf = fs.readFileSync("./test-images/special/gray-circle.proc.png");
-  const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
+  const canvas = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf, () => new Image());
   const histo = getHistogram(canvas);
   testAssert(histo[255] === 0, "This image is designed so that we shouldn't see any pure-white pixels as long as we're only histogramming the central circle");
 
@@ -137,7 +137,7 @@ export async function runTestImages() {
     }
 
     const buf = fs.readFileSync(file);
-    const canvas = await ImageEffects.prepareCanvasFromBuffer(buf, () => new Image());
+    const canvas = await ImageEffects.prepareCanvasFromBuffer<Canvas>(buf, () => new Image());
 
     let processed = await (lastPromise = ImageEffects.process(canvas, modelToTest));
     
