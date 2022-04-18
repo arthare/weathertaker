@@ -61,8 +61,9 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
     const startingUs = dayCycle * minIsoEquivMaxExposure + (1-dayCycle)*this.MIN_EXPOSURE_US;
 
 
-    this._currentUs = startingUs;
-    this._currentIso = this.MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
+    // start at a black exposure because it's faster to recover from
+    this._currentUs = minExposureUs;
+    this._currentIso = minIso;
     
     // adjust ISOs and currentUs so that we get back under preferred exposure
     for(var x = 0; x < (this.MAX_ISO / this.MIN_ISO); x++) {

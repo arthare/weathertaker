@@ -100,7 +100,7 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
     fs.writeFileSync('./last-exposure.json', JSON.stringify(saveThis));
 
     return new Promise((resolve, reject) => {
-      const cameraCommand = `libcamera-still --gain ${(targetIso / 40).toFixed(2)} --immediate -o ./tmp/from-camera.jpg --shutter ${exposeUs} --width 1640 --height 1232 -n`;
+      const cameraCommand = `libcamera-still --gain ${(targetIso / 40).toFixed(2)} --immediate -o ./tmp/from-camera.jpg --shutter ${exposeUs} ${cameraModel.extraParams} --width 1640 --height 1232 -n`;
       console.log("running camera command ", cameraCommand);
       exec(cameraCommand, (err, stdout, stderr) => {
         if(err) {
