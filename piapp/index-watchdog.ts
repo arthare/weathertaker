@@ -13,13 +13,13 @@ export async function runWatchdog() {
     clearTimeout(rebootTimeout);
     rebootTimeout = setTimeout(() => {
       execSync('sudo reboot');
-    }, 5*60000);
+    }, 10*60000);
   }
   function resetInternetTimeout() {
     clearTimeout(rebootBecauseInternetTimeout);
     rebootBecauseInternetTimeout = setTimeout(() => {
       execSync('sudo reboot');
-    }, 5*60000);
+    }, 10*60000);
   }
 
   fs.watchFile('./tmp/from-camera.jpg', {
