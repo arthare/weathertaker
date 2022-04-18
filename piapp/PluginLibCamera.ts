@@ -10,8 +10,12 @@ import { ExposureAdjustingCamera } from './PluginUtils';
 import { CameraModel } from '../webapp/src/Configs/Camera/Model';
 
 
-function roundToShutterMultiple(us:number) {
-  return (Math.floor(us / 20)*20)
+function roundToShutterMultiple(us:number, fix60Hz:boolean) {
+  if(fix60Hz) {
+    return Math.max(16666, (Math.floor(us / 16666)*16666));
+  } else {
+    return Math.max(20, Math.floor(us / 20)*20);
+  }
 }
 
 export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPlugin {
@@ -20,13 +24,13 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
   lastSettings:any = null;
 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
-  private _maxExposureUs = 8000000; // 8s for the v2 camera once you install the better raspistill
+  private _maxExposureUs = 80000000; // 8s for the v2 camera once you install the better raspistill
   private _preferredExposureUs = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
   private _minExposureUs = 20; // 1/10000s
 
   // these appear to be the actual capabilities of the camera
   private _maxIso = 800;
-  private _minIso = 100;
+  private _minIso = 1;
 
   constructor() {
     super();
@@ -76,8 +80,14 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
   }
 
   takePhotoExposureControlled(targetUs:number, targetIso:number, cameraModel:CameraModel):Promise<Buffer> {
-    const exposeUs = roundToShutterMultiple(targetUs);
-    console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + targetIso + " ISO");
+
+    const originalTargetedExposure = targetUs * targetIso;
+    const exposeUs = roundToShutterMultiple(targetUs, cameraModel.fix60hz);
+    const achievedExposure = exposeUs * targetIso; // so let's say that we had to round to 1 second, but they'd asked for 1.2s @ ISO 400.  This means we gotta bump our ISO up slightly to compensate
+    const achievedRatio = achievedExposure / originalTargetedExposure; // in the "achieved 1s after asked for 1.2s" situation, this will be 0.833.  We will want to bump out ISO
+    targetIso /= achievedRatio;
+
+    console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + targetIso + " ISO" + " adjusted to " + targetIso);
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
 
     let saveThis:any = {};
