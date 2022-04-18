@@ -25,8 +25,8 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
   private _maxExposureUs = 80000000; // 8s for the v2 camera once you install the better raspistill
-  private _preferredExposureUs = 1000*1000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
-  private _minExposureUs = 33333; // 1/30 of second (trying to avoid flicker)
+  private _preferredExposureUs = 20; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
+  private _minExposureUs = 20; // 1/30 of second (trying to avoid flicker)
 
   // these appear to be the actual capabilities of the camera
   private _maxIso = 800;

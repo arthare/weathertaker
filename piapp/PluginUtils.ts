@@ -62,6 +62,7 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
 
 
     this._currentUs = startingUs;
+    this._currentIso = this.MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
     
     // adjust ISOs and currentUs so that we get back under preferred exposure
     for(var x = 0; x < (this.MAX_ISO / this.MIN_ISO); x++) {
@@ -70,7 +71,6 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
     }
     this.checkExposureBounds();
 
-    this._currentIso = this.MIN_ISO; // start at 100iso because that's what minIsoEquivMaxExposure is assuming
     
   }
 
