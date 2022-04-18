@@ -74,7 +74,7 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
   protected getActualShutterSettingsFor(us: number, iso: number): { us: number; iso: number; internal: any; } {
     return {
       iso,
-      us: roundToShutterMultiple(us),
+      us: roundToShutterMultiple(us, false),
       internal: null,
     }
   }
