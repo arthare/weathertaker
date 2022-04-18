@@ -75,7 +75,9 @@ export function getHistogram(canvas:Canvas):number[] {
 
   let pixelsChecked = 0;
 
-  for(var ixRow = 0; ixRow < canvas.height / 2; ixRow++) {
+  const stepSize = 6;
+
+  for(var ixRow = 0; ixRow < canvas.height / 2; ixRow+=stepSize) {
     const ixStart = ixRow * bytesPerRow;
     const pctRow = ixRow / canvas.height;
     
@@ -87,7 +89,7 @@ export function getHistogram(canvas:Canvas):number[] {
     const byteStart = ixRow * bytesPerRow;
     const rowData = data.data.slice(byteStart, byteStart + bytesPerRow);
 
-    for(var ixCol = ixColLeft; ixCol < ixColRight; ixCol++) {
+    for(var ixCol = ixColLeft; ixCol < ixColRight; ixCol+=stepSize) {
       const ixPx = ixRow * bytesPerRow + ixCol*pix.length;
       pixelsChecked++;
 
@@ -102,6 +104,9 @@ export function getHistogram(canvas:Canvas):number[] {
     }
   }
   testAssert(alpha[255] === pixelsChecked);
+
+  ret = ret.map((val) => val * stepSize * stepSize);
+
   return ret;
 }
 
