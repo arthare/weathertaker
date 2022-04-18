@@ -25,7 +25,7 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
 
   // the camera can actually go longer and shorter than these bounds, I just don't want it to get too blurry
   private _maxExposureUs = 80000000; // 8s for the v2 camera once you install the better raspistill
-  private _preferredExposureUs = 20; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
+  private _preferredExposureUs = 1000000; // "preferred" exposure is used so that we use more ISO instead of more exposure time, until we're capped out on ISO
   private _minExposureUs = 20; // 1/30 of second (trying to avoid flicker)
 
   // these appear to be the actual capabilities of the camera
@@ -81,11 +81,7 @@ export class LibCameraPlugin extends ExposureAdjustingCamera implements CameraPl
 
   takePhotoExposureControlled(targetUs:number, targetIso:number, cameraModel:CameraModel):Promise<Buffer> {
 
-    //const originalTargetedExposure = targetUs * targetIso;
     const exposeUs = roundToShutterMultiple(targetUs, cameraModel.fix60hz);
-    //const achievedExposure = exposeUs * targetIso; // so let's say that we had to round to 1 second, but they'd asked for 1.2s @ ISO 400.  This means we gotta bump our ISO up slightly to compensate
-    //const achievedRatio = achievedExposure / originalTargetedExposure; // in the "achieved 1s after asked for 1.2s" situation, this will be 0.833.  We will want to bump out ISO
-    //targetIso /= achievedRatio;
 
     console.log(elapsed(), "takePhoto() " + (exposeUs/1000).toFixed(2) + "ms @ " + targetIso + " ISO" + " adjusted to " + targetIso);
     // --timeout 1 comes from: https://www.raspberrypi.org/forums/viewtopic.php?t=203229
