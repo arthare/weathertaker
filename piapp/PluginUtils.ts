@@ -134,6 +134,7 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
     this.checkExposureBounds();
   }
   private checkExposureBounds() {
+    console.log("checking exposure bounds.  Current settings ", this._currentUs, "us and ", this._currentIso, "iso.  Preferred ", this.PREFERRED_EXPOSURE_US, " and minexp ", this.MIN_EXPOSURE_US);
     if(this._currentUs > this.PREFERRED_EXPOSURE_US) {
       // hmm, we're getting to a pretty long exposure here...
       // let's step up the ISO
@@ -149,7 +150,7 @@ export abstract class ExposureAdjustingCamera implements CameraPlugin {
           // this is fine.  Stuff's going to get grainy, but we can support it.
         }
       }
-    } else if(this._currentUs < this.MIN_EXPOSURE_US) {
+    } else if(this._currentUs <= this.MIN_EXPOSURE_US) {
       // below minimum exposure time.  Let's step down ISO
       if(this._currentIso > this.MIN_ISO) {
         // we still have some ISO room
