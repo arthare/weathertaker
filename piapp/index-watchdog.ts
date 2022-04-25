@@ -12,28 +12,30 @@ export async function runWatchdog() {
   function resetTimeout() {
     clearTimeout(rebootTimeout);
     rebootTimeout = setTimeout(() => {
+      console.error("Rebooting at ", new Date(), " because from-camera hasn't changed in 20 minutes");
       execSync('sudo reboot');
-    }, 10*60000);
+    }, 20*60000);
   }
   function resetInternetTimeout() {
     clearTimeout(rebootBecauseInternetTimeout);
     rebootBecauseInternetTimeout = setTimeout(() => {
+      console.error("Rebooting at ", new Date(), " because internet-sends hasn't changed in 20 minutes");
       execSync('sudo reboot');
-    }, 10*60000);
+    }, 20*60000);
   }
 
   fs.watchFile('./tmp/from-camera.jpg', {
     persistent: true,
     interval: 250,
   }, (curr:fs.Stats, prev:fs.Stats) => {
-    console.log("from-camera changed!", curr, prev);
+    console.log("from-camera changed at ", new Date());
     resetTimeout();
   })
   fs.watchFile('./tmp/internet-sends.txt', {
     persistent: true,
     interval: 250,
   }, (curr:fs.Stats, prev:fs.Stats) => {
-    console.log("internet-sends changed!", curr, prev);
+    console.log("internet-sends changed at ", new Date());
     resetInternetTimeout();
   })
   console.log("set up watcher for ./tmp/from-camera.jpg");
