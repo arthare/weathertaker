@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { LatLngModel } from '../webapp/src/Configs/LatLng/Model';
-import { analyzeHistogram, getHistogram, getHistogramInRc, getMeanBrightness, ImageEffects, testAssert } from '../webapp/src/Configs/Utils';
+import { analyzeHistogram, getHistogram, getHistogramInRc, getMeanBrightness, ImageEffects, Rect, testAssert } from '../webapp/src/Configs/Utils';
 import {Canvas, Image} from 'canvas';
 import { ProcessModel } from '../webapp/src/Configs/Process/Model';
 import { CurrentTimeModel } from '../webapp/src/Configs/CurrentTime/Model';
@@ -29,6 +29,7 @@ export async function runTestImages() {
       "desiredPhotoPeriodMs": 10000,
       "minSunAngle": -90,
       "targetedMeanBrightness": 128,
+      "privacyRects": [{left: 100, top: 200, right: 300, bottom: 600}] as Rect[],
     },
     "LatLng": {
       "lat": 51.1984,

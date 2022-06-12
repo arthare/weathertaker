@@ -1,8 +1,9 @@
 import { Canvas } from "canvas";
 import { LatLngModel } from "../LatLng/Model";
-import { analyzeHistogram, elapsed, getHistogram, getHistogramInRc, getMeanBrightness, testAssert } from "../Utils";
+import { analyzeHistogram, elapsed, getHistogram, getHistogramInRc, getMeanBrightness, makeCanvas, testAssert } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
+import { fstatSync } from "fs";
 
 
 function copyOverDefaults(model:any, key:string, defSetting:any) {
@@ -18,6 +19,8 @@ function copyOverDefaults(model:any, key:string, defSetting:any) {
     }
   }
 }
+
+import fs from 'fs';
 
 export function apply<T>(input:T, models:any):T {
 
@@ -138,6 +141,25 @@ export function apply<T>(input:T, models:any):T {
       pixels[index] = Math.floor(val);
     })
     ctx.putImageData(data, 0, 0);
+  }
+
+  const cameraModel = models['Camera'];
+  if(cameraModel?.privacyRects && cameraModel.privacyRects.length >= 1) {
+    // they have privacy rectangles to apply
+    const image = input as any as Canvas;
+    const newCanvas = new Canvas(image.width / 20, image.height / 20);
+    
+    const ctxNewCanvas = newCanvas.getContext('2d');
+    const blurVal = `blur(${(image.width / 10).toFixed(0)}px)`;
+    ctxNewCanvas.filter = blurVal; // turn on blur filter
+    ctxNewCanvas.drawImage(image, 0, 0, image.width, image.height, 0, 0, image.width / 20, image.height / 20); // copy over old image
+    
+    
+    for(var rc of cameraModel.privacyRects) {
+      const w = rc.right - rc.left;
+      const h = rc.bottom - rc.top;
+      ctx.drawImage(newCanvas, rc.left / 20, rc.top / 20, w / 20, h / 20, rc.left, rc.top, w, h);
+    }
   }
 
   if(process.env['SAVELOCALIMAGES']) {

@@ -219,7 +219,7 @@ export default class Db {
   static getRecentImages(tmNow:number, spanSeconds:number, sourceId:number):Promise<ImageInfo[]> {
     return getDb().then((db) => {
       return new Promise<ImageInfo[]>((resolve, reject) => {
-        db.execute('select id,filename,unixtime from images where sourceid=? order by unixtime desc limit 800', [sourceId], (err, result:any[]) => {
+        db.execute('select id,filename,unixtime from images where sourceid=? order by id desc limit 800', [sourceId], (err, result:any[]) => {
           if(err) {
             console.error("getRecentImages error", err);
             reject(err);
@@ -502,57 +502,7 @@ export default class Db {
   }
 
   static async getReactionCountsForVideo(videoId:number):Promise<{[key:string]:number}> {
-    // ok, this one is a bit complicated.
-    // if we get reactions for a video, that'll be fairly shitty.
-    // because a video is only the "lead" video for like 15 seconds.
-    // so what we want to do is try to get the cumulative reaction counts for every video that shares images with the targeted video.
-    // so first we want to get all the imageids that are included in this video:
-    //   SQL: select images_in_videos.id,videos.* from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id
-    // then we want to find all the videoids that share some of those images:
-    //   SQL: (select videos.id from videos,images_in_videos where images_in_videos.videoid=videos.id and images_in_videos.imageid in (select images_in_videos.imageid from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id) group by videos.id)
-    // then we want to find all the reactions applied to any of those videoids:
-    //   SQL: (select count(id) as total, reactions.reactionid from reactions where reactions.videoid in (select videos.id from videos,images_in_videos where images_in_videos.videoid=videos.id and images_in_videos.imageid in (select images_in_videos.imageid from images_in_videos,reactions, videos where videos.removed=0 and reactions.videoid=videos.id and videos.id=7719 and images_in_videos.videoid=videos.id) group by videos.id) group by reactions.reactionid)
-
-    return getDb().then((db) => {
-      return new Promise<{[key:number]:number}>((resolve, reject) => {
-        db.execute(`SELECT 
-                          COUNT(id) as total, reactions.reactionid
-                      FROM
-                          reactions
-                      WHERE
-                          reactions.videoid IN (SELECT 
-                                  videos.id
-                              FROM
-                                  videos,
-                                  images_in_videos
-                              WHERE
-                                  images_in_videos.videoid = videos.id
-                                      AND images_in_videos.imageid IN (SELECT 
-                                          images_in_videos.imageid
-                                      FROM
-                                          images_in_videos,
-                                          reactions,
-                                          videos
-                                      WHERE
-                                          videos.removed = 0
-                                              AND videos.id = ?
-                                              AND images_in_videos.videoid = videos.id)
-                              GROUP BY videos.id)
-                      GROUP BY reactions.reactionid`, [videoId], (err, results:any[]) => {
-          if(err) {
-            console.log("failed to get reaction counts", err);
-            reject(err);
-          } else {
-            let ret:{[key:string]:number} = {};
-            results.forEach((result) => {
-              ret[result.reactionid] = result.total
-            });
-            resolve(ret);
-          }
-        })
-      }).finally(() => db.end());
-    })
-
+    return {};
   }
 
   static async getReactionCounts():Promise<{[key:number]:number}> {

@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { UV_FS_O_FILEMAP } from 'constants';
 import fs from 'fs';
 import { platform } from 'os';
@@ -183,7 +183,7 @@ async function generateVideoFor(sourceId:number):Promise<any> {
   
       console.log("command\n\n", finalCommand);
       const tmStart = new Date().getTime();
-      exec(finalCommand, (err, stdout, stderr) => {
+      const proc = exec(finalCommand, (err, stdout, stderr) => {
         const tmDone = new Date().getTime();
         const seconds = ((tmDone - tmStart) / 1000);
         const fps = imageList.length / seconds;
@@ -201,6 +201,20 @@ async function generateVideoFor(sourceId:number):Promise<any> {
             tmEnd: Math.max(...images.map((image) => image.tmTaken)) / 1000,
           });
         }
+      });
+      console.log("renicing!");
+      var priority  = 10;
+      var reniceProc = spawn("renice", [`${priority}`,  `-u`, `art`]);
+      reniceProc.on('exit', function (code) {
+        if (code !== 0){
+            console.log("Process renice failed with code - " +code);
+        }
+      });
+      reniceProc.stdout.on('data', function(data){
+          console.log('renice stdout: ' + data);
+      });
+      reniceProc.stderr.on('data', function(data){
+          console.log('renice stderr: '+ data);
       });
     });
     await Db.insertVideo(createdVideo);

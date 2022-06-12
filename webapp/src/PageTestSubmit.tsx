@@ -58,7 +58,7 @@ const PageIndex = () => {
             imageBase64: resizedDownDataUri.slice(resizedDownDataUri.indexOf(',') + 1),
           }
 
-          const base = window.location.hostname === 'localhost' ? 'http://localhost:2702' : 'http://t4c.ca/api'
+          const base = window.location.hostname === 'localhost' ? 'http://localhost:2702' : 'http://fastsky.ca/api'
           return fetch(`${base}/image-submission`, {
             method: 'POST',
             headers: {

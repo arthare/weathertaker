@@ -194,7 +194,7 @@ export function elapsed():number {
   return (tmNow - msStart);
 }
 
-function makeCanvas<T>(w:number,h:number):T {
+export function makeCanvas<T>(w:number,h:number):T {
   if(typeof document !== 'undefined' && document.createElement) {
     const c = document.createElement('canvas');
     c.width = w;

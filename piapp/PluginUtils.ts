@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import { platform } from 'os';
 import { CameraModel } from '../webapp/src/Configs/Camera/Model';
-import { elapsed, getHistogram, getHistogramInRc, getMeanBrightness } from '../webapp/src/Configs/Utils';
+import { elapsed, getHistogram, getHistogramInRc, getMeanBrightness, makeCanvas } from '../webapp/src/Configs/Utils';
 import { CameraPlugin } from './Plugin';
 import { testAssert } from './Utils';
 

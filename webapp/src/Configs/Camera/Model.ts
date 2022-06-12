@@ -11,6 +11,7 @@ export class CameraModel {
     this.targetedMeanBrightness = 140;
     this.rcExposure = null;
     this.fix60hz = false;
+    this.privacyRects = [];
   }
 
   desiredW:number;
@@ -20,5 +21,6 @@ export class CameraModel {
   extraParams:string;
   targetedMeanBrightness:number;
   rcExposure: Rect| null;
+  privacyRects?: Rect[];
   fix60hz:boolean;
 }

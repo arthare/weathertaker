@@ -1,6 +1,6 @@
 tsc
 
-SIGNIN=art@t4c.ca
+SIGNIN=art@fastsky.ca
 APIHOSTDIR=/home/art/t4c-api
 
 ssh $SIGNIN "mkdir -p $APIHOSTDIR"

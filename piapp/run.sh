@@ -7,6 +7,7 @@ git pull origin master
 tsc
 echo "startup!" > ./tmp/startup.txt
 
+renice 10 -u art
 echo "starting main app pm2"
 pm2 restart pm2.json
 
