@@ -94,6 +94,16 @@ const PageIndex = () => {
 
     const onResize = () => doSizeCheck()
     window.addEventListener('resize',onResize);
+
+    const win = window as any;
+    win.dataLayer = win.dataLayer || [];
+    function gtag(arg1:any, arg2:any){
+      (win as any).dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-09T8G2TNSP');
+
     return function cleanup() {
       window.removeEventListener('resize', onResize);
     }
@@ -305,6 +315,10 @@ const PageIndex = () => {
       <Helmet>
         <title>FastSky</title>
         <script src="https://kit.fontawesome.com/d8b18df8ff.js" crossOrigin={"anonymous" as any}></script>
+        {/*<!-- Google tag (gtag.js) -->*/}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-09T8G2TNSP"></script>
+        <script>
+        </script>
       </Helmet>
       {videoUrl && (<>
         <div className="Index__Video-Progress">

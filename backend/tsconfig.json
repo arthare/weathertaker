@@ -9,6 +9,7 @@
   },
   "files": [
     "./index.ts",
+    "./index-cleanup.ts"
   ],
   "include": [
   ],

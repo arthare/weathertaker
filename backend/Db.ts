@@ -58,6 +58,12 @@ function getPathToVideo(videoInfo:VideoInfo) {
   return `./videos/${videoInfo.handle}/${videoInfo.filename}`;
 }
 
+export class UserInfo {
+  sub:string;
+  nickname:string;
+  allowedSources:string[];
+}
+
 export default class Db {
 
   static getAllSources():Promise<SourceInfo[]> {
@@ -191,20 +197,7 @@ export default class Db {
 
   private static async createVideoImages(videoId:number, imageIds:number[]):Promise<number> {
 
-    return getDb().then((db) => {
-      return new Promise<number>((resolve, reject) => {
-
-        const rows = imageIds.map((imgId) => [videoId, imgId]);
-
-        db.query('insert into images_in_videos (videoid,imageid) values ?', [rows], (err, result:any) => {
-          if(err) {
-            reject(err);
-          } else {
-            resolve(result.insertId);
-          }
-        })
-      }).finally(() => db.end());
-    })
+    return Promise.resolve(0);
 
   }
 
@@ -343,6 +336,29 @@ export default class Db {
     })
 
   }
+
+  static async getUser(sub:string, includeSources:boolean):Promise<UserInfo> {
+    const db = await getDb();
+
+    return new Promise<UserInfo>((resolve, reject) => {
+      db.execute('select sub, nickname, sourceid from users, user_sources where user_sources.userid=users.id and users.sub=? group by user_sources.sourceid', [sub], (err, results:any[]) => {
+        if(err) {
+          reject(err);
+        } else {
+          const res:UserInfo = {
+            sub,
+            nickname: results[0].nickname,
+            allowedSources: includeSources && results.map((res) => res.sourceid) || [],
+          }
+          resolve(res);
+        }
+      })
+    })
+  }
+  static async createUser(sub:string, nickname:string):Promise<UserInfo> {
+    return Promise.reject(new Error("Not implemented"));
+  }
+
   static getNextSource(startFromId:number):Promise<SourceInfo> {
     // let's find every source with a fresh (recent in 1 day) video
     if(typeof startFromId !== 'number') {
@@ -524,7 +540,35 @@ export default class Db {
     })
 
   }
-
+  static async removeImagesInVideosWithFile(file:string):Promise<any> {
+    return getDb().then((db) => {
+      return new Promise<void>((resolve, reject) => {
+        db.execute('delete from images_in_videos where imageid in (select id from images where filename=?) ', [file], (err, results:any) => {
+          if(err) {
+            reject(err);
+          } else {
+            console.log("removed linkage for ", file, results);
+            resolve();
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
+  static async tickCleanImages(n:number):Promise<any> {
+    // delete from images_in_videos where videoid in (select id from videos where removed=1) limit 10000
+    return getDb().then((db) => {
+      return new Promise<void>((resolve, reject) => {
+        db.execute('delete from images_in_videos where videoid in (select id from videos where removed=1 order by id asc) and videoid not in (select id from videos where removed=0) limit 10000', [], (err, results:any) => {
+          if(err) {
+            console.warn("Failed to clean up images", err);
+          } else {
+            console.log("Removed 10 images_in_videos ", results);
+            resolve();
+          }
+        })
+      }).finally(() => db.end());
+    })
+  }
   static async checkRemovedVideos():Promise<any> {
     const activeVideos = await this.getActiveVideoInfos();
 

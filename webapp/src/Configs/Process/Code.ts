@@ -3,7 +3,7 @@ import { LatLngModel } from "../LatLng/Model";
 import { analyzeHistogram, elapsed, getHistogram, getHistogramInRc, getMeanBrightness, makeCanvas, testAssert } from "../Utils";
 import { ProcessModel } from "./Model";
 import SunCalc from 'suncalc';
-import { fstatSync } from "fs";
+import fs from 'fs';
 
 
 function copyOverDefaults(model:any, key:string, defSetting:any) {
@@ -20,7 +20,6 @@ function copyOverDefaults(model:any, key:string, defSetting:any) {
   }
 }
 
-import fs from 'fs';
 
 export function apply<T>(input:T, models:any):T {
 

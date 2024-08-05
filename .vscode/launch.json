@@ -24,6 +24,26 @@
     }, {
       "type": "node",
       "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "name": "Backend server cleanup",
+      "skipFiles": [
+          "<node_internals>/**"
+      ],
+
+      "args": ["cleanup"],
+      "program": "${workspaceFolder}/backend/index-cleanup.ts",
+      "preLaunchTask":{
+          "type": "typescript",
+          "tsconfig": "backend/tsconfig.json",
+          "problemMatcher": [
+              "$tsc"
+          ],
+          "group": "build",
+      },
+      "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"]
+    }, {
+      "type": "node",
+      "request": "launch",
       "cwd": "${workspaceFolder}/piapp",
       "name": "Image Sender",
       "skipFiles": [

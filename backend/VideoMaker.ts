@@ -24,6 +24,8 @@ async function removeFileList(list:string[]):Promise<any> {
 
   let size = 0;
   function removeSingleFile(file:string):Promise<any> {
+    
+    // we need to clear this out of the db as well
     return new Promise<any>((resolve) => {
       size += fs.statSync(file).size;
       fs.unlink(file, resolve);
@@ -31,7 +33,7 @@ async function removeFileList(list:string[]):Promise<any> {
   }
 
   // ok, time to actually remove all these files...
-  const proms = list.map(async (file) => {
+  const proms = list.map(async (file, index) => {
     return removeSingleFile(file);
   });
   return Promise.all(proms).finally(() => {
@@ -106,6 +108,7 @@ async function cleanupOldImages():Promise<any> {
   const sources = await Db.getAllSources();
 
   let filesToDelete:string[] = [];
+  let imageIdsToDelete:number[] = [];
   for(var x = 0;x < sources.length; x++) {
     const source = sources[x];
     const imagesToKeep = await Db.getRecentImages(tmNow, 0, source.id);
@@ -125,6 +128,7 @@ async function cleanupOldImages():Promise<any> {
         if(!setKeep.has(imgPath)) {
           console.log("I should delete ", imgPath, " because it isn't in setKeep");
           filesToDelete.push(imgPath);
+          imageIdsToDelete.push(imagesToKeep[0].id)
         }
       })
     } catch(e) {
@@ -278,7 +282,6 @@ async function checkForWork() {
 
 export function notifyDirtySource(sourceId:number) {
   g_staleCount[sourceId] = Math.max(1, g_staleCount[sourceId] || 0);
-  console.log("stalecount now: ", g_staleCount);
 }
 
 export function initVideoMaker() {

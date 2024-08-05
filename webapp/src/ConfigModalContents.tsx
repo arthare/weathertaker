@@ -36,7 +36,7 @@ const ConfigModalContents = (props:{config:GetConfigResponse, onSendNewModel:(pw
         const localModel = JSON.parse(JSON.stringify(model));
         localModel['CurrentTime'] = {tm: new Date().getTime(), pctDay}
         const image = await ImageEffects.prepareCanvasFromBuffer(Buffer.from(srcBase64, 'base64'), () => document.createElement('img'));
-        const newCanvas = await ImageEffects.process(image, localModel);
+        const newCanvas = await ImageEffects.process(image as any, localModel);
         fnDone(newCanvas.toDataURL());
       }
 
@@ -57,8 +57,8 @@ const ConfigModalContents = (props:{config:GetConfigResponse, onSendNewModel:(pw
           await props.onSendNewModel(pwd, parsed);
           setApiKey(pwd); // successful submission -> save the password so we don't need it again
           alert("Updated!");
-        } catch(e) {
-          alert("Failed to send your new instructions.  " + e.message);
+        } catch(e:any) {
+          alert("Failed to send your new instructions.  " + e?.message);
         }
       } else {
 
